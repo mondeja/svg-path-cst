@@ -1,0 +1,19 @@
+[package]
+name = "svg-path-cst"
+version = "0.0.1"
+edition = "2021"
+readme = "README.md"
+description = "CST SVG path parser."
+license = "MIT"
+documentation = "https://docs.rs/svg-path-cst"
+repository = "https://github.com/mondeja/svg-path-cst"
+
+[lib]
+name = "svg_path_cst"
+path = "src/lib.rs"
+
+[dependencies]
+snafu = "0.7.5"
+
+[dev-dependencies]
+doc-comment = "0.3.3"
