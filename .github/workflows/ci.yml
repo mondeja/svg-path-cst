@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - master
+    tags:
+      - v*
   pull_request:
   workflow_dispatch:
 
@@ -55,6 +57,7 @@ jobs:
   test-release-crate:
     name: Test crate release
     needs: test-rust
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -62,14 +65,13 @@ jobs:
         uses: hecrj/setup-rust-action@v2
       - name: Publish
         run: |
-          cd rust
           cargo login ${{ secrets.CRATES_TOKEN }}
           cargo publish -v --dry-run
 
   release-crate:
     name: Release crate
     if: startsWith(github.ref, 'refs/tags/')
-    needs: test-release-crate
+    needs: test-rust
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

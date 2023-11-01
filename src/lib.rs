@@ -991,7 +991,7 @@ impl<'a> Parser<'a> {
             _ => Err(SyntaxError::InvalidCharacter {
                 character: command_character,
                 index: self.index - 1,
-                expected: "command character".to_string(),
+                expected: "command".to_string(),
             }),
         }
     }
