@@ -4,7 +4,7 @@
 ![Tests](https://img.shields.io/github/actions/workflow/status/mondeja/svg-path-cst/ci.yml?label=tests)
 [![License](https://img.shields.io/crates/l/svg-path-cst)](https://github.com/mondeja/svg-path-cst/blob/master/LICENSE.md)
 
-Concrete Syntax Tree SVG paths parser.
+Concrete Syntax Tree parser for SVG v1.1 paths.
 
 ## Install
 

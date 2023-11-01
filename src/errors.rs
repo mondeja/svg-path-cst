@@ -9,31 +9,52 @@ pub enum SyntaxError {
     #[snafu(display(
         "Invalid SVG path command '{command}' at index {index}, expected 'M' or 'm'"
     ))]
-    ExpectedMovetoCommand { command: char, index: usize },
+    ExpectedMovetoCommand {
+        /// Command letter found
+        command: char,
+        /// Index of the command in the path
+        index: usize,
+    },
 
     /// Invalid number found in path.
     #[snafu(display("Invalid number '{number}' at index {index}"))]
-    InvalidNumber { number: String, index: usize },
+    InvalidNumber {
+        /// Number found
+        number: String,
+        /// Index of the number in the path
+        index: usize,
+    },
 
     /// Invalid character found in path.
     #[snafu(display(
         "Invalid character '{character}' at index {index}, expected {expected}"
     ))]
     InvalidCharacter {
+        /// Character found
         character: char,
+        /// Index of the character in the path
         index: usize,
+        /// Expected character
         expected: String,
     },
 
     /// Invalid path ending.
     #[snafu(display("Unexpected SVG path end at index {index}, expected {expected}"))]
-    UnexpectedEnding { index: usize, expected: String },
+    UnexpectedEnding {
+        /// Index of the end of the path
+        index: usize,
+        /// Expected token
+        expected: String,
+    },
 
     /// Invalid SVG quaractic arc command flag argument.
     #[snafu(display("Invalid SVG path elliptical arc command '{command}' at index {index}. Expected 0 or 1 (flag) but found '{value}'"))]
     InvalidArcFlag {
+        /// Command letter found
         command: char,
+        /// Index of the command in the path
         index: usize,
+        /// Value found
         value: f64,
     },
 }

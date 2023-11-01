@@ -1,71 +1,17 @@
-//! Concrete Syntax Tree parser for SVG v1.1 paths.
-//!
-//! Provides all the necessary types and functions to parse a SVG path into a
-//! concrete syntax tree (CST).
-//!
-//! # Example
-//!
-//! ```
-//! use svg_path_cst::{
-//!     svg_path_cst,
-//!     SVGPathCSTNode,
-//!     SVGPathSegment,
-//!     SVGPathCommand,
-//!     WSP,
-//! };
-//!
-//! let path = "M 10 10 L 20 20";
-//! let cst = svg_path_cst(path);
-//! assert_eq!(
-//!     cst,
-//!     Ok(vec![
-//!         SVGPathCSTNode::Segment(SVGPathSegment {
-//!             command: &SVGPathCommand::MovetoUpper,
-//!             args: vec![10.0, 10.0],
-//!             cst: vec![
-//!                 SVGPathCSTNode::Command(&SVGPathCommand::MovetoUpper),
-//!                 SVGPathCSTNode::Whitespace(&WSP::Space),
-//!                 SVGPathCSTNode::Number("10".to_string()),
-//!                 SVGPathCSTNode::Whitespace(&WSP::Space),
-//!                 SVGPathCSTNode::Number("10".to_string()),
-//!             ],
-//!             start: 0,
-//!             end: 7,
-//!             chained: false,
-//!             chain_start: 0,
-//!             chain_end: 7,
-//!         }),
-//!         SVGPathCSTNode::Whitespace(&WSP::Space),
-//!         SVGPathCSTNode::Segment(SVGPathSegment {
-//!             command: &SVGPathCommand::LinetoUpper,
-//!             args: vec![20.0, 20.0],
-//!             cst: vec![
-//!                 SVGPathCSTNode::Command(&SVGPathCommand::LinetoUpper),
-//!                 SVGPathCSTNode::Whitespace(&WSP::Space),
-//!                 SVGPathCSTNode::Number("20".to_string()),
-//!                 SVGPathCSTNode::Whitespace(&WSP::Space),
-//!                 SVGPathCSTNode::Number("20".to_string()),
-//!             ],
-//!             start: 8,
-//!             end: 15,
-//!             chained: false,
-//!             chain_start: 8,
-//!             chain_end: 15,
-//!         }),
-//!     ])
-//! );
-//! ```
+#![doc = include_str!("../README.md")]
+#![warn(missing_docs)]
+#![doc(test(attr(deny(warnings))))]
 
 #[cfg(doctest)]
 ::doc_comment::doctest!("../README.md");
+
+#[cfg(test)]
+mod tests;
 
 use std::iter::Peekable;
 use std::str::Chars;
 mod errors;
 pub use errors::SyntaxError;
-
-#[cfg(test)]
-mod tests;
 
 static COMMAND_CHARACTERS: [char; 20] = [
     'M', 'm', 'V', 'v', 'H', 'h', 'L', 'l', 'Z', 'z', 'C', 'c', 'S', 's', 'Q', 'q',
@@ -78,18 +24,12 @@ type Coordinate = (Option<SVGPathCSTNode>, SVGPathCSTNode, f64);
 
 /// Whitespace token
 ///
-/// Represents a whitespace character in the SVG path. The following characters
-/// are considered whitespace following the v1.1 SVG Path specification:
-///
-/// - Space (U+0020)
-/// - Tab (U+0009)
-/// - Line Feed (U+000A)
-/// - Form Feed (U+000C)
-/// - Carriage Return (U+000D)
+/// Represents a whitespace character in the SVG path following
+/// the v1.1 SVG Path specification.
 ///
 /// # Example
 ///
-/// A path compound by whitespaces is considered a valid empty SVG path
+/// A path compound by whitespaces is considered a valid empty path
 /// according to the SVG Path v1.1 specification.
 ///
 /// ```
@@ -121,49 +61,61 @@ type Coordinate = (Option<SVGPathCSTNode>, SVGPathCSTNode, f64);
 /// ```
 #[derive(Debug, PartialEq, Clone)]
 pub enum WSP {
+    /// Space (U+0020)
     Space,
+    /// Tab (U+0009)
     Tab,
+    /// Line Feed (U+000A)
     LineFeed,
+    /// Form Feed (U+000C)
     FormFeed,
+    /// Carriage Return (U+000D)
     CarriageReturn,
 }
 
 /// SVG path command
-///
-/// Represents a SVG path command. The following commands are supported:
-///
-/// - Moveto (M, m)
-/// - Lineto (L, l)
-/// - Horizontal Lineto (H, h)
-/// - Vertical Lineto (V, v)
-/// - Closepath (Z, z)
-/// - Curveto (C, c)
-/// - Smooth Curveto (S, s)
-/// - Quadratic Bezier Curve (Q, q)
-/// - Smooth Quadratic Bezier Curve (T, t)
-/// - Elliptical Arc (A, a)
 #[derive(Debug, PartialEq, Clone)]
 pub enum SVGPathCommand {
+    /// M
     MovetoUpper,
+    /// m
     MovetoLower,
+    /// L
     LinetoUpper,
+    /// l
     LinetoLower,
+    /// H
     HorizontalUpper,
+    /// h
     HorizontalLower,
+    /// V
     VerticalUpper,
+    /// v
     VerticalLower,
+    /// Z
     ClosepathUpper,
+    /// z
     ClosepathLower,
-    CurvetoUpper,         // C
-    CurvetoLower,         // c
-    SmoothCurvetoUpper,   // S
-    SmoothCurvetoLower,   // s
-    ArcUpper,             // A
-    ArcLower,             // a
-    QuadraticUpper,       // Q
-    QuadraticLower,       // q
-    SmoothQuadraticUpper, // T
-    SmoothQuadraticLower, // t
+    /// C
+    CurvetoUpper,
+    /// c
+    CurvetoLower,
+    /// S
+    SmoothCurvetoUpper,
+    /// s
+    SmoothCurvetoLower,
+    /// A
+    ArcUpper,
+    /// a
+    ArcLower,
+    /// Q
+    QuadraticUpper,
+    /// q
+    QuadraticLower,
+    /// T
+    SmoothQuadraticUpper,
+    /// t
+    SmoothQuadraticLower,
 }
 
 impl SVGPathCommand {
@@ -245,7 +197,9 @@ impl SVGPathCommand {
 /// ```
 #[derive(Debug, PartialEq, Clone)]
 pub enum Sign {
+    /// Plus sign (+)
     Plus,
+    /// Minus sign (-)
     Minus,
 }
 
@@ -258,13 +212,21 @@ pub enum Sign {
 /// in the `cst` field.
 #[derive(Debug, PartialEq, Clone)]
 pub enum SVGPathCSTNode {
+    /// None token. This is used to represent an empty SVG path with a
+    /// explicit `"none"` value in `d` attribute.
     None,
+    /// Whitespace token
     Whitespace(&'static WSP),
+    /// A SVG path segment tokens struct
     Segment(SVGPathSegment),
 
+    /// Plus and minur numeric sign tokens
     Sign(&'static Sign),
+    /// Number token
     Number(String),
+    /// Comma token
     Comma,
+    /// SVG path command token
     Command(&'static SVGPathCommand),
 }
 
@@ -296,6 +258,7 @@ pub struct SVGPathSegment {
 }
 
 impl SVGPathSegment {
+    /// Generates a new SVG path segment
     pub fn new(command: &'static SVGPathCommand, start: usize, chained: bool) -> Self {
         let capacity = command.capacity();
         Self {
@@ -942,11 +905,7 @@ impl<'a> Parser<'a> {
 /// Errors can be handled by matching the `SyntaxError` enum.
 ///
 /// ```
-/// use svg_path_cst::{
-///     svg_path_cst,
-///     SVGPathCSTNode,
-///     SyntaxError as SVGPathSyntaxError,
-/// };
+/// use svg_path_cst::{svg_path_cst, SyntaxError as SVGPathSyntaxError};
 ///
 /// let cst = svg_path_cst("M10 10!");
 /// assert_eq!(
