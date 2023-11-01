@@ -404,7 +404,7 @@ impl<'a> Parser<'a> {
         Ok(comma_wsp)
     }
 
-    fn parse_number(&mut self) -> Result<SVGPathCSTNode, SyntaxError> {
+    fn parse_number(&mut self) -> Result<(SVGPathCSTNode, f64), SyntaxError> {
         let mut number = String::new();
         let mut has_dot = false;
         let mut has_e = false;
@@ -468,7 +468,13 @@ impl<'a> Parser<'a> {
             });
         }
 
-        Ok(SVGPathCSTNode::Number(number))
+        match number.parse::<f64>() {
+            Ok(value) => Ok((SVGPathCSTNode::Number(number), value)),
+            Err(_) => Err(SyntaxError::InvalidNumber {
+                number: number.clone(),
+                index: self.index,
+            }),
+        }
     }
 
     fn parse_sign(&mut self) -> Option<SVGPathCSTNode> {
@@ -490,27 +496,18 @@ impl<'a> Parser<'a> {
 
     fn parse_coordinate(&mut self) -> Result<Coordinate, SyntaxError> {
         let sign_node = self.parse_sign();
-        let number_node = self.parse_number()?;
-        let SVGPathCSTNode::Number(number) = &number_node else { unreachable!() };
-        match number.parse::<f64>() {
-            Ok(value) => {
-                if let Some(SVGPathCSTNode::Sign(sign)) = &sign_node {
-                    Ok((
-                        sign_node.clone(),
-                        number_node,
-                        match sign {
-                            Sign::Plus => value,
-                            Sign::Minus => -value,
-                        },
-                    ))
-                } else {
-                    Ok((sign_node, number_node, value))
-                }
-            }
-            Err(_) => Err(SyntaxError::InvalidNumber {
-                number: number.clone(),
-                index: self.index,
-            }),
+        let (number_node, number_value) = self.parse_number()?;
+        if let Some(SVGPathCSTNode::Sign(sign)) = &sign_node {
+            Ok((
+                sign_node.clone(),
+                number_node,
+                match sign {
+                    Sign::Plus => number_value,
+                    Sign::Minus => -number_value,
+                },
+            ))
+        } else {
+            Ok((sign_node, number_node, number_value))
         }
     }
 
@@ -726,16 +723,8 @@ impl<'a> Parser<'a> {
                     expected: "number".to_string(),
                 });
             }
-            let number_node = self.parse_number()?;
-            let SVGPathCSTNode::Number(number) = &number_node else { unreachable!() };
-            let value = number.parse::<f64>();
-            if value.is_err() {
-                return Err(SyntaxError::InvalidNumber {
-                    number: number.clone(),
-                    index: self.index,
-                });
-            }
-            first_segment.args.push(value.unwrap());
+            let (number_node, number_value) = self.parse_number()?;
+            first_segment.args.push(number_value);
             first_segment.cst.push(number_node);
             first_segment.cst.extend(self.parse_comma_wsp()?);
         }
@@ -747,21 +736,11 @@ impl<'a> Parser<'a> {
                     expected: "arc flag (0 or 1)".to_string(),
                 });
             }
-            let number_node = self.parse_number()?;
-            let SVGPathCSTNode::Number(number) = &number_node else { unreachable!() };
-            let value = match number.parse::<f64>() {
-                Ok(value) => value,
-                Err(_) => {
-                    return Err(SyntaxError::InvalidNumber {
-                        number: number.clone(),
-                        index: self.index,
-                    })
-                }
-            };
-            if value != 0.0 && value != 1.0 {
+            let (number_node, number_value) = self.parse_number()?;
+            if number_value != 0.0 && number_value != 1.0 {
                 return Err(SyntaxError::InvalidArcFlag {
                     index: self.index,
-                    value,
+                    value: number_value,
                     command: match command {
                         SVGPathCommand::ArcLower => 'a',
                         _ => 'A',
@@ -769,7 +748,7 @@ impl<'a> Parser<'a> {
                 });
             }
 
-            first_segment.args.push(value);
+            first_segment.args.push(number_value);
             first_segment.cst.push(number_node);
             first_segment.cst.extend(self.parse_comma_wsp()?);
         }
@@ -795,18 +774,8 @@ impl<'a> Parser<'a> {
                             expected: "number".to_string(),
                         });
                     }
-                    let number_node = self.parse_number()?;
-                    let SVGPathCSTNode::Number(number) = &number_node else { unreachable!() };
-                    let value = match number.parse::<f64>() {
-                        Ok(value) => value,
-                        Err(_) => {
-                            return Err(SyntaxError::InvalidNumber {
-                                number: number.clone(),
-                                index: self.index,
-                            })
-                        }
-                    };
-                    segment.args.push(value);
+                    let (number_node, number_value) = self.parse_number()?;
+                    segment.args.push(number_value);
                     segment.cst.push(number_node);
                     segment.cst.extend(self.parse_comma_wsp()?);
                 }
@@ -818,21 +787,11 @@ impl<'a> Parser<'a> {
                             expected: "arc flag (0 or 1)".to_string(),
                         });
                     }
-                    let number_node = self.parse_number()?;
-                    let SVGPathCSTNode::Number(number) = &number_node else { unreachable!() };
-                    let value = match number.parse::<f64>() {
-                        Ok(value) => value,
-                        Err(_) => {
-                            return Err(SyntaxError::InvalidNumber {
-                                number: number.clone(),
-                                index: self.index,
-                            })
-                        }
-                    };
-                    if value != 0.0 && value != 1.0 {
+                    let (number_node, number_value) = self.parse_number()?;
+                    if number_value != 0.0 && number_value != 1.0 {
                         return Err(SyntaxError::InvalidArcFlag {
                             index: self.index,
-                            value,
+                            value: number_value,
                             command: match segment.command {
                                 SVGPathCommand::ArcLower => 'a',
                                 _ => 'A',
@@ -840,7 +799,7 @@ impl<'a> Parser<'a> {
                         });
                     }
 
-                    segment.args.push(value);
+                    segment.args.push(number_value);
                     segment.cst.push(number_node);
                     segment.cst.extend(self.parse_comma_wsp()?);
                 }
