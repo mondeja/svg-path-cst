@@ -471,6 +471,7 @@ impl<'a> Parser<'a> {
             }
             self.next_char();
         }
+
         if !has_digit {
             return Err(SyntaxError::InvalidNumber {
                 number: number.clone(),
@@ -507,6 +508,7 @@ impl<'a> Parser<'a> {
     fn parse_coordinate(&mut self) -> Result<Coordinate, SyntaxError> {
         let sign_node = self.parse_sign();
         let (number_node, number_value) = self.parse_number()?;
+
         let mut value = number_value;
         if let Some(SVGPathCSTNode::Sign(sign)) = &sign_node {
             value = match sign {
@@ -514,6 +516,7 @@ impl<'a> Parser<'a> {
                 Sign::Minus => -number_value,
             };
         }
+
         Ok((sign_node, number_node, value))
     }
 
@@ -521,6 +524,7 @@ impl<'a> Parser<'a> {
         &mut self,
     ) -> Result<(Vec<SVGPathCSTNode>, (f64, f64)), SyntaxError> {
         let mut nodes = vec![];
+
         let (first_sign, first_number, first_value) = self.parse_coordinate()?;
         if let Some(sign) = first_sign {
             nodes.push(sign);
@@ -532,6 +536,7 @@ impl<'a> Parser<'a> {
             nodes.push(sign);
         }
         nodes.push(second_number);
+
         Ok((nodes, (first_value, second_value)))
     }
 
@@ -542,6 +547,7 @@ impl<'a> Parser<'a> {
         let mut first_segment = SVGPathSegment::new(command, self.index - 1, false);
         first_segment.cst.push(SVGPathCSTNode::Command(command));
         first_segment.cst.extend(self.parse_whitespaces());
+
         let (coord_nodes, coord_values) = self.parse_coordinate_pair()?;
         first_segment.args.push(coord_values.0);
         first_segment.args.push(coord_values.1);
@@ -586,6 +592,7 @@ impl<'a> Parser<'a> {
     ) -> Result<Vec<SVGPathCSTNode>, SyntaxError> {
         let mut first_segment = SVGPathSegment::new(command, self.index - 1, false);
         first_segment.cst.push(SVGPathCSTNode::Command(command));
+
         for _ in 0..2 {
             first_segment.cst.extend(self.parse_whitespaces());
             self.check_unexpected_end("coordinate pair")?;
@@ -638,6 +645,7 @@ impl<'a> Parser<'a> {
     ) -> Result<Vec<SVGPathCSTNode>, SyntaxError> {
         let mut first_segment = SVGPathSegment::new(command, self.index - 1, false);
         first_segment.cst.push(SVGPathCSTNode::Command(command));
+
         for _ in 0..3 {
             first_segment.cst.extend(self.parse_whitespaces());
             self.check_unexpected_end("coordinate pair")?;
@@ -660,15 +668,15 @@ impl<'a> Parser<'a> {
                 segment.args.push(coord_values_1.0);
                 segment.args.push(coord_values_1.1);
                 segment.cst.extend(self.parse_whitespaces());
-                self.check_unexpected_end("coordinate pair")?;
 
+                self.check_unexpected_end("coordinate pair")?;
                 let (coord_nodes_2, coord_values_2) = self.parse_coordinate_pair()?;
                 segment.cst.extend(coord_nodes_2);
                 segment.args.push(coord_values_2.0);
                 segment.args.push(coord_values_2.1);
                 segment.cst.extend(self.parse_whitespaces());
-                self.check_unexpected_end("coordinate pair")?;
 
+                self.check_unexpected_end("coordinate pair")?;
                 let (coord_nodes_3, coord_values_3) = self.parse_coordinate_pair()?;
                 segment.cst.extend(coord_nodes_3);
                 segment.args.push(coord_values_3.0);
@@ -739,6 +747,7 @@ impl<'a> Parser<'a> {
         if let Some(mut next) = self.chars.peek() {
             while !COMMAND_CHARACTERS.contains(next) {
                 let mut segment = SVGPathSegment::new(command, self.index, true);
+
                 for _ in 0..3 {
                     next_nodes.extend(self.parse_whitespaces());
                     self.check_unexpected_end("number")?;
@@ -747,6 +756,7 @@ impl<'a> Parser<'a> {
                     segment.cst.push(number_node);
                     segment.cst.extend(self.parse_comma_wsp()?);
                 }
+
                 for _ in 0..2 {
                     next_nodes.extend(self.parse_whitespaces());
                     self.check_unexpected_end("arc flag (0 or 1)")?;
@@ -766,6 +776,7 @@ impl<'a> Parser<'a> {
                     segment.cst.push(number_node);
                     segment.cst.extend(self.parse_comma_wsp()?);
                 }
+
                 self.check_unexpected_end("coordinate pair")?;
                 let (coord_nodes, coord_values) = self.parse_coordinate_pair()?;
                 segment.args.push(coord_values.0);
@@ -795,6 +806,7 @@ impl<'a> Parser<'a> {
     ) -> Vec<SVGPathCSTNode> {
         let mut segment = SVGPathSegment::new(command, self.index - 1, false);
         segment.end = self.index;
+        segment.chain_end = self.index;
         segment.cst.push(SVGPathCSTNode::Command(command));
         vec![SVGPathCSTNode::Segment(segment)]
     }
@@ -806,6 +818,7 @@ impl<'a> Parser<'a> {
         let mut first_segment = SVGPathSegment::new(command, self.index - 1, false);
         first_segment.cst.push(SVGPathCSTNode::Command(command));
         first_segment.cst.extend(self.parse_whitespaces());
+
         let (sign, number, value) = self.parse_coordinate()?;
         first_segment.args.push(value);
         if let Some(sign) = sign {
@@ -850,9 +863,9 @@ impl<'a> Parser<'a> {
 
     fn parse_drawto(
         &mut self,
-        command_character: char,
+        command: char,
     ) -> Result<Vec<SVGPathCSTNode>, SyntaxError> {
-        match command_character {
+        match command {
             'm' => self.parse_two_operands_command(&SVGPathCommand::MovetoLower),
             'M' => self.parse_two_operands_command(&SVGPathCommand::MovetoUpper),
             'l' => self.parse_two_operands_command(&SVGPathCommand::LinetoLower),
@@ -882,7 +895,7 @@ impl<'a> Parser<'a> {
                 self.parse_two_operands_command(&SVGPathCommand::SmoothQuadraticUpper)
             }
             _ => Err(SyntaxError::InvalidCharacter {
-                character: command_character,
+                character: command,
                 index: self.index - 1,
                 expected: "command".to_string(),
             }),
