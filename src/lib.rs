@@ -347,6 +347,16 @@ impl<'a> Parser<'a> {
         self.chars.next()
     }
 
+    fn check_unexpected_end(&mut self, expected: &str) -> Result<(), SyntaxError> {
+        if self.chars.peek().is_none() {
+            return Err(SyntaxError::UnexpectedEnding {
+                index: self.index - 1,
+                expected: expected.to_string(),
+            });
+        }
+        Ok(())
+    }
+
     fn parse_whitespaces(&mut self) -> Vec<SVGPathCSTNode> {
         let mut whitespaces = vec![];
         while let Some(next) = self.chars.peek() {
@@ -497,18 +507,14 @@ impl<'a> Parser<'a> {
     fn parse_coordinate(&mut self) -> Result<Coordinate, SyntaxError> {
         let sign_node = self.parse_sign();
         let (number_node, number_value) = self.parse_number()?;
+        let mut value = number_value;
         if let Some(SVGPathCSTNode::Sign(sign)) = &sign_node {
-            Ok((
-                sign_node.clone(),
-                number_node,
-                match sign {
-                    Sign::Plus => number_value,
-                    Sign::Minus => -number_value,
-                },
-            ))
-        } else {
-            Ok((sign_node, number_node, number_value))
+            value = match sign {
+                Sign::Plus => number_value,
+                Sign::Minus => -number_value,
+            };
         }
+        Ok((sign_node, number_node, value))
     }
 
     fn parse_coordinate_pair(
@@ -582,12 +588,7 @@ impl<'a> Parser<'a> {
         first_segment.cst.push(SVGPathCSTNode::Command(command));
         for _ in 0..2 {
             first_segment.cst.extend(self.parse_whitespaces());
-            if self.chars.peek().is_none() {
-                return Err(SyntaxError::UnexpectedEnding {
-                    index: self.index - 1,
-                    expected: "coordinate pair".to_string(),
-                });
-            }
+            self.check_unexpected_end("coordinate pair")?;
             let (coord_nodes, coord_values) = self.parse_coordinate_pair()?;
             first_segment.args.push(coord_values.0);
             first_segment.args.push(coord_values.1);
@@ -607,12 +608,7 @@ impl<'a> Parser<'a> {
                 segment.args.push(coord_values_1.0);
                 segment.args.push(coord_values_1.1);
                 segment.cst.extend(self.parse_whitespaces());
-                if self.chars.peek().is_none() {
-                    return Err(SyntaxError::UnexpectedEnding {
-                        index: self.index - 1,
-                        expected: "coordinate pair".to_string(),
-                    });
-                }
+                self.check_unexpected_end("coordinate pair")?;
 
                 let (coord_nodes_2, coord_values_2) = self.parse_coordinate_pair()?;
                 segment.cst.extend(coord_nodes_2);
@@ -644,12 +640,7 @@ impl<'a> Parser<'a> {
         first_segment.cst.push(SVGPathCSTNode::Command(command));
         for _ in 0..3 {
             first_segment.cst.extend(self.parse_whitespaces());
-            if self.chars.peek().is_none() {
-                return Err(SyntaxError::UnexpectedEnding {
-                    index: self.index - 1,
-                    expected: "coordinate pair".to_string(),
-                });
-            }
+            self.check_unexpected_end("coordinate pair")?;
             let (coord_nodes, coord_values) = self.parse_coordinate_pair()?;
             first_segment.args.push(coord_values.0);
             first_segment.args.push(coord_values.1);
@@ -669,23 +660,15 @@ impl<'a> Parser<'a> {
                 segment.args.push(coord_values_1.0);
                 segment.args.push(coord_values_1.1);
                 segment.cst.extend(self.parse_whitespaces());
-                if self.chars.peek().is_none() {
-                    return Err(SyntaxError::UnexpectedEnding {
-                        index: self.index - 1,
-                        expected: "coordinate pair".to_string(),
-                    });
-                }
+                self.check_unexpected_end("coordinate pair")?;
+
                 let (coord_nodes_2, coord_values_2) = self.parse_coordinate_pair()?;
                 segment.cst.extend(coord_nodes_2);
                 segment.args.push(coord_values_2.0);
                 segment.args.push(coord_values_2.1);
                 segment.cst.extend(self.parse_whitespaces());
-                if self.chars.peek().is_none() {
-                    return Err(SyntaxError::UnexpectedEnding {
-                        index: self.index - 1,
-                        expected: "coordinate pair".to_string(),
-                    });
-                }
+                self.check_unexpected_end("coordinate pair")?;
+
                 let (coord_nodes_3, coord_values_3) = self.parse_coordinate_pair()?;
                 segment.cst.extend(coord_nodes_3);
                 segment.args.push(coord_values_3.0);
@@ -717,12 +700,7 @@ impl<'a> Parser<'a> {
         first_segment.cst.extend(self.parse_whitespaces());
 
         for _ in 0..3 {
-            if self.chars.peek().is_none() {
-                return Err(SyntaxError::UnexpectedEnding {
-                    index: self.index - 1,
-                    expected: "number".to_string(),
-                });
-            }
+            self.check_unexpected_end("number")?;
             let (number_node, number_value) = self.parse_number()?;
             first_segment.args.push(number_value);
             first_segment.cst.push(number_node);
@@ -730,12 +708,7 @@ impl<'a> Parser<'a> {
         }
 
         for _ in 0..2 {
-            if self.chars.peek().is_none() {
-                return Err(SyntaxError::UnexpectedEnding {
-                    index: self.index - 1,
-                    expected: "arc flag (0 or 1)".to_string(),
-                });
-            }
+            self.check_unexpected_end("arc flag (0 or 1)")?;
             let (number_node, number_value) = self.parse_number()?;
             if number_value != 0.0 && number_value != 1.0 {
                 return Err(SyntaxError::InvalidArcFlag {
@@ -768,12 +741,7 @@ impl<'a> Parser<'a> {
                 let mut segment = SVGPathSegment::new(command, self.index, true);
                 for _ in 0..3 {
                     next_nodes.extend(self.parse_whitespaces());
-                    if self.chars.peek().is_none() {
-                        return Err(SyntaxError::UnexpectedEnding {
-                            index: self.index - 1,
-                            expected: "number".to_string(),
-                        });
-                    }
+                    self.check_unexpected_end("number")?;
                     let (number_node, number_value) = self.parse_number()?;
                     segment.args.push(number_value);
                     segment.cst.push(number_node);
@@ -781,12 +749,7 @@ impl<'a> Parser<'a> {
                 }
                 for _ in 0..2 {
                     next_nodes.extend(self.parse_whitespaces());
-                    if self.chars.peek().is_none() {
-                        return Err(SyntaxError::UnexpectedEnding {
-                            index: self.index - 1,
-                            expected: "arc flag (0 or 1)".to_string(),
-                        });
-                    }
+                    self.check_unexpected_end("arc flag (0 or 1)")?;
                     let (number_node, number_value) = self.parse_number()?;
                     if number_value != 0.0 && number_value != 1.0 {
                         return Err(SyntaxError::InvalidArcFlag {
@@ -803,12 +766,7 @@ impl<'a> Parser<'a> {
                     segment.cst.push(number_node);
                     segment.cst.extend(self.parse_comma_wsp()?);
                 }
-                if self.chars.peek().is_none() {
-                    return Err(SyntaxError::UnexpectedEnding {
-                        index: self.index - 1,
-                        expected: "coordinate pair".to_string(),
-                    });
-                }
+                self.check_unexpected_end("coordinate pair")?;
                 let (coord_nodes, coord_values) = self.parse_coordinate_pair()?;
                 segment.args.push(coord_values.0);
                 segment.args.push(coord_values.1);
