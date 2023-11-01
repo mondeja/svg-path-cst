@@ -68,12 +68,14 @@ fn test_whitespaces_fmt() {
 
 #[test]
 fn invalid_character() {
+    let expected = "number or command".to_string();
+
     assert_svg_path_cst_err!(
         "m0 0 !l10 10",
         SyntaxError::InvalidCharacter {
             character: '!',
             index: 5,
-            expected: "number or path command".to_string(),
+            expected: expected.clone(),
         }
     );
 
@@ -82,7 +84,7 @@ fn invalid_character() {
         SyntaxError::InvalidCharacter {
             character: '!',
             index: 6,
-            expected: "number or path command".to_string(),
+            expected: expected.clone(),
         }
     );
 
@@ -91,7 +93,7 @@ fn invalid_character() {
         SyntaxError::InvalidCharacter {
             character: '!',
             index: 3,
-            expected: "number or path command".to_string(),
+            expected: expected.clone(),
         }
     );
 
@@ -100,13 +102,13 @@ fn invalid_character() {
         SyntaxError::InvalidCharacter {
             character: '!',
             index: 7,
-            expected: "number or path command".to_string(),
+            expected: expected.clone(),
         }
     );
 }
 
 #[test]
-fn invalid_moveto_command_at_start() {
+fn invalid_moveto_at_start() {
     assert_svg_path_cst_err!(
         "A 10 10",
         SyntaxError::ExpectedMovetoCommand {
@@ -117,12 +119,34 @@ fn invalid_moveto_command_at_start() {
 }
 
 #[test]
-fn invalid_moveto_command_after_whitespaces() {
+fn invalid_moveto_after_wsp() {
     assert_svg_path_cst_err!(
         " \t\n\r \x0C A 10 10",
         SyntaxError::ExpectedMovetoCommand {
             command: 'A',
             index: 7,
+        }
+    );
+}
+
+#[test]
+fn invalid_end_in_moveto() {
+    assert_svg_path_cst_err!(
+        "m 10",
+        SyntaxError::UnexpectedEnding {
+            index: 3,
+            expected: "comma or whitespace".to_string(),
+        }
+    );
+}
+
+#[test]
+fn invalid_moveto_args() {
+    assert_svg_path_cst_err!(
+        "m 1 2 3",
+        SyntaxError::UnexpectedEnding {
+            index: 6,
+            expected: "comma or whitespace".to_string(),
         }
     );
 }
@@ -716,5 +740,16 @@ fn moveto_smooth_quadratic() {
                 chain_end: 20,
             }),
         ]
+    );
+}
+
+#[test]
+fn invalid_multiple_commas() {
+    assert_svg_path_cst_err!(
+        "m0 0,,100,100",
+        SyntaxError::InvalidNumber {
+            number: "".to_string(),
+            index: 4,
+        }
     );
 }

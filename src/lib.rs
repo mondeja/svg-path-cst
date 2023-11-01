@@ -1,4 +1,4 @@
-//! Concrete Syntax Tree parser for SVG paths v1.1
+//! Concrete Syntax Tree parser for SVG v1.1 paths.
 //!
 //! Provides all the necessary types and functions to parse a SVG path into a
 //! concrete syntax tree (CST).
@@ -301,10 +301,11 @@ pub struct SVGPathSegment {
 
 impl SVGPathSegment {
     pub fn new(command: &'static SVGPathCommand, start: usize, chained: bool) -> Self {
+        let capacity = command.capacity();
         Self {
             command,
-            args: Vec::with_capacity(command.capacity()),
-            cst: vec![],
+            args: Vec::with_capacity(capacity),
+            cst: Vec::with_capacity(capacity * 2),
             start,
             end: start,
             chained,
@@ -383,7 +384,7 @@ impl<'a> Parser<'a> {
                 }
             }
         } else {
-            return Err(SyntaxError::InvalidPathTermination {
+            return Err(SyntaxError::UnexpectedEnding {
                 index: self.index - 1,
                 expected: "comma or whitespace".to_string(),
             });
@@ -441,7 +442,7 @@ impl<'a> Parser<'a> {
                         return Err(SyntaxError::InvalidCharacter {
                             character: *next,
                             index: self.index,
-                            expected: "number or path command".to_string(),
+                            expected: "number or command".to_string(),
                         });
                     }
                     break;
@@ -582,7 +583,7 @@ impl<'a> Parser<'a> {
         for _ in 0..2 {
             first_segment.cst.extend(self.parse_whitespaces());
             if self.chars.peek().is_none() {
-                return Err(SyntaxError::InvalidPathTermination {
+                return Err(SyntaxError::UnexpectedEnding {
                     index: self.index - 1,
                     expected: "coordinate pair".to_string(),
                 });
@@ -608,7 +609,7 @@ impl<'a> Parser<'a> {
                 segment.args.push(coord_values_1.1);
                 segment.cst.extend(self.parse_whitespaces());
                 if self.chars.peek().is_none() {
-                    return Err(SyntaxError::InvalidPathTermination {
+                    return Err(SyntaxError::UnexpectedEnding {
                         index: self.index - 1,
                         expected: "coordinate pair".to_string(),
                     });
@@ -656,7 +657,7 @@ impl<'a> Parser<'a> {
         for _ in 0..3 {
             first_segment.cst.extend(self.parse_whitespaces());
             if self.chars.peek().is_none() {
-                return Err(SyntaxError::InvalidPathTermination {
+                return Err(SyntaxError::UnexpectedEnding {
                     index: self.index - 1,
                     expected: "coordinate pair".to_string(),
                 });
@@ -682,7 +683,7 @@ impl<'a> Parser<'a> {
                 segment.args.push(coord_values_1.1);
                 segment.cst.extend(self.parse_whitespaces());
                 if self.chars.peek().is_none() {
-                    return Err(SyntaxError::InvalidPathTermination {
+                    return Err(SyntaxError::UnexpectedEnding {
                         index: self.index - 1,
                         expected: "coordinate pair".to_string(),
                     });
@@ -693,7 +694,7 @@ impl<'a> Parser<'a> {
                 segment.args.push(coord_values_2.1);
                 segment.cst.extend(self.parse_whitespaces());
                 if self.chars.peek().is_none() {
-                    return Err(SyntaxError::InvalidPathTermination {
+                    return Err(SyntaxError::UnexpectedEnding {
                         index: self.index - 1,
                         expected: "coordinate pair".to_string(),
                     });
@@ -741,7 +742,7 @@ impl<'a> Parser<'a> {
 
         for _ in 0..3 {
             if self.chars.peek().is_none() {
-                return Err(SyntaxError::InvalidPathTermination {
+                return Err(SyntaxError::UnexpectedEnding {
                     index: self.index - 1,
                     expected: "number".to_string(),
                 });
@@ -758,7 +759,7 @@ impl<'a> Parser<'a> {
 
         for _ in 0..2 {
             if self.chars.peek().is_none() {
-                return Err(SyntaxError::InvalidPathTermination {
+                return Err(SyntaxError::UnexpectedEnding {
                     index: self.index - 1,
                     expected: "arc flag (0 or 1)".to_string(),
                 });
@@ -801,7 +802,7 @@ impl<'a> Parser<'a> {
                 for _ in 0..3 {
                     next_nodes.extend(self.parse_whitespaces());
                     if self.chars.peek().is_none() {
-                        return Err(SyntaxError::InvalidPathTermination {
+                        return Err(SyntaxError::UnexpectedEnding {
                             index: self.index - 1,
                             expected: "number".to_string(),
                         });
@@ -820,7 +821,7 @@ impl<'a> Parser<'a> {
                 for _ in 0..2 {
                     next_nodes.extend(self.parse_whitespaces());
                     if self.chars.peek().is_none() {
-                        return Err(SyntaxError::InvalidPathTermination {
+                        return Err(SyntaxError::UnexpectedEnding {
                             index: self.index - 1,
                             expected: "arc flag (0 or 1)".to_string(),
                         });
@@ -848,7 +849,7 @@ impl<'a> Parser<'a> {
                     segment.cst.extend(self.parse_comma_wsp()?);
                 }
                 if self.chars.peek().is_none() {
-                    return Err(SyntaxError::InvalidPathTermination {
+                    return Err(SyntaxError::UnexpectedEnding {
                         index: self.index - 1,
                         expected: "coordinate pair".to_string(),
                     });
@@ -1033,28 +1034,32 @@ impl<'a> Parser<'a> {
     }
 }
 
-/// Parse a SVG path string and returns a concrete syntax tree.
+/// Parse a SVG path string and returns a concrete syntax tree
 ///
 /// # Example
 ///
 /// Errors can be handled by matching the `SyntaxError` enum.
 ///
 /// ```
-/// use svg_path_cst::{svg_path_cst, SVGPathCSTNode, SyntaxError};
+/// use svg_path_cst::{
+///     svg_path_cst,
+///     SVGPathCSTNode,
+///     SyntaxError as SVGPathSyntaxError,
+/// };
 ///
 /// let cst = svg_path_cst("M10 10!");
 /// assert_eq!(
 ///     cst,
-///     Err(SyntaxError::InvalidCharacter {
+///     Err(SVGPathSyntaxError::InvalidCharacter {
 ///         character: '!',
 ///         index: 6,
-///         expected: "number or path command".to_string(),
+///         expected: "number or command".to_string(),
 ///     })
 /// );
 ///
 /// assert_eq!(
 ///     cst.unwrap_err().to_string(),
-///     "Invalid character '!' at index 6, expected number or path command"
+///     "Invalid character '!' at index 6, expected number or command"
 /// );
 /// ```
 pub fn svg_path_cst(path: &str) -> Result<Vec<SVGPathCSTNode>, SyntaxError> {

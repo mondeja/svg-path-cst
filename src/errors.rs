@@ -1,8 +1,8 @@
 use snafu::prelude::*;
 
-/// Syntax errors that can occur when parsing an SVG path.
+/// Syntax errors that can occur when parsing an SVG path
 ///
-/// These errors try to be exhaustive,.
+/// These errors try to be exhaustive.
 #[derive(Debug, PartialEq, Snafu, Clone)]
 pub enum SyntaxError {
     /// The first command in a path is not moveto.
@@ -26,8 +26,8 @@ pub enum SyntaxError {
     },
 
     /// Invalid path ending.
-    #[snafu(display("Invalid SVG path end at index {index}, expected {expected}"))]
-    InvalidPathTermination { index: usize, expected: String },
+    #[snafu(display("Unexpected SVG path end at index {index}, expected {expected}"))]
+    UnexpectedEnding { index: usize, expected: String },
 
     /// Invalid SVG quaractic arc command flag argument.
     #[snafu(display("Invalid SVG path elliptical arc command '{command}' at index {index}. Expected 0 or 1 (flag) but found '{value}'"))]
