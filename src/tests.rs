@@ -1304,6 +1304,117 @@ fn invalid_multiple_commas() {
 }
 
 #[test]
+fn arc_with_flags_together() {
+    assert_svg_path_cst!(
+        "m0 0a1.862 1.862 0 00-.248.033",
+        vec![
+            SVGPathCSTNode::Segment(SVGPathSegment {
+                command: &SVGPathCommand::MovetoLower,
+                args: vec![0.0, 0.0],
+                cst: vec![
+                    SVGPathCSTNode::Command(&SVGPathCommand::MovetoLower),
+                    SVGPathCSTNode::Number {
+                        raw_number: "0".to_string(),
+                        value: 0.0,
+                        start: 1,
+                        end: 2,
+                    },
+                    SVGPathCSTNode::Whitespace {
+                        wsp: &WSP::Space,
+                        start: 2,
+                        end: 3,
+                    },
+                    SVGPathCSTNode::Number {
+                        raw_number: "0".to_string(),
+                        value: 0.0,
+                        start: 3,
+                        end: 4,
+                    },
+                ],
+                start: 0,
+                end: 4,
+                chained: false,
+                chain_start: 0,
+                chain_end: 4,
+            }),
+            SVGPathCSTNode::Segment(SVGPathSegment {
+                command: &SVGPathCommand::ArcLower,
+                args: vec![1.862, 1.862, 0.0, 0.0, 0.0, -0.248, 0.033],
+                cst: vec![
+                    SVGPathCSTNode::Command(&SVGPathCommand::ArcLower),
+                    SVGPathCSTNode::Number {
+                        raw_number: "1.862".to_string(),
+                        value: 1.862,
+                        start: 5,
+                        end: 10,
+                    },
+                    SVGPathCSTNode::Whitespace {
+                        wsp: &WSP::Space,
+                        start: 10,
+                        end: 11,
+                    },
+                    SVGPathCSTNode::Number {
+                        raw_number: "1.862".to_string(),
+                        value: 1.862,
+                        start: 11,
+                        end: 16,
+                    },
+                    SVGPathCSTNode::Whitespace {
+                        wsp: &WSP::Space,
+                        start: 16,
+                        end: 17,
+                    },
+                    SVGPathCSTNode::Number {
+                        raw_number: "0".to_string(),
+                        value: 0.0,
+                        start: 17,
+                        end: 18,
+                    },
+                    SVGPathCSTNode::Whitespace {
+                        wsp: &WSP::Space,
+                        start: 18,
+                        end: 19,
+                    },
+                    SVGPathCSTNode::Number {
+                        raw_number: "0".to_string(),
+                        value: 0.0,
+                        start: 19,
+                        end: 20,
+                    },
+                    SVGPathCSTNode::Number {
+                        raw_number: "0".to_string(),
+                        value: 0.0,
+                        start: 20,
+                        end: 21,
+                    },
+                    SVGPathCSTNode::Sign {
+                        sign: &Sign::Minus,
+                        start: 21,
+                    },
+                    SVGPathCSTNode::Number {
+                        raw_number: ".248".to_string(),
+                        value: 0.248,
+                        start: 22,
+                        end: 26,
+                    },
+                    SVGPathCSTNode::Number {
+                        raw_number: ".033".to_string(),
+                        value: 0.033,
+                        start: 26,
+                        end: 30,
+                    },
+                ],
+                start: 4,
+                end: 30,
+                chained: false,
+                chain_start: 4,
+                chain_end: 30,
+            }),
+        ]
+    );
+}
+
+#[test]
 fn simple_icons_icon_path() {
     let cst = svg_path_cst("M12 0C8.688 0 6 2.688 6 6s2.688 6 6 6c1.066 0 2.1171.2862 3.0371.8262 2.858 1.678 3.8167 5.3539 2.1387 8.2129h1.6797a7.4925 7.4925 0 0 0 .6425-3.0293c.003-4.144-3.356-7.5048-7.498-7.5098-2.484 0-4.5-2.016-4.5-4.5S9.516 1.5 12 1.5s4.5 2.016 4.5 4.5H18c0-3.312-2.688-6-6-6zm0 3c-1.597.04-2.8799 1.3259-2.9219 2.9219C9.0351 7.5799 10.343 8.957 12 9c1.597-.04 2.8799-1.3259 2.9219-2.9219C14.9649 4.4201 13.656 3.043 12 3zm0 1.5c.828 0 1.5.672 1.5 1.5v.002c0 .828-.672 1.5-1.5 1.5-.83 0-1.5-.673-1.5-1.502 0-.83.67-1.5 1.5-1.5zM7.5 15v1.5H9v6H4.5V24h15v-1.5H15v-6h1.5V15h-9zm3 1.5h3v6h-3v-6zm-6 1.4707V18a7.418 7.418 0 0 0 .6445 3.039h1.6836C6.3001 20.147 6 19.11 6 18v-.0293H4.5Z");
     assert!(cst.is_ok());
