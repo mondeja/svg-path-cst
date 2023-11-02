@@ -1058,8 +1058,7 @@ fn invalid_arc_flag() {
         "m0 0a100,100 0 2 1 250,200",
         SyntaxError::InvalidArcFlag {
             index: 16,
-            value: 2.0,
-            command: 'a',
+            character: '2',
         }
     );
 }

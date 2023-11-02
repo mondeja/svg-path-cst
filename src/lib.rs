@@ -616,6 +616,24 @@ impl<'a> Parser<'a> {
         None
     }
 
+    fn parse_flag(&mut self) -> Result<f64, SyntaxError> {
+        let next = self.next_char();
+        if next.is_none() {
+            return Err(SyntaxError::UnexpectedEnding {
+                index: self.index,
+                expected: "flag (0 or 1)".to_string(),
+            });
+        }
+        match next.unwrap() {
+            '0' => Ok(0.0),
+            '1' => Ok(1.0),
+            _ => Err(SyntaxError::InvalidArcFlag {
+                index: self.index,
+                character: next.unwrap(),
+            }),
+        }
+    }
+
     fn parse_coordinate(&mut self) -> Result<Coordinate, SyntaxError> {
         let sign_node = self.parse_sign();
         let SVGPathCSTNode::Number {
@@ -853,30 +871,17 @@ impl<'a> Parser<'a> {
         }
 
         for _ in 0..2 {
-            self.check_unexpected_end("arc flag (0 or 1)")?;
-            let SVGPathCSTNode::Number {
-                raw_number,
-                value,
-                start,
-                end,
-            } = self.parse_number()?
-            else {
-                unreachable!()
-            };
-            if value != 0.0 && value != 1.0 {
-                return Err(SyntaxError::InvalidArcFlag {
-                    index: self.index,
-                    value,
-                    command: command.to_char(),
-                });
-            }
-
+            let value = self.parse_flag()?;
             first_segment.args.push(value);
             first_segment.cst.push(SVGPathCSTNode::Number {
-                raw_number,
+                raw_number: if value == 0.0 {
+                    "0".to_string()
+                } else {
+                    "1".to_string()
+                },
                 value,
-                start,
-                end,
+                start: self.index - 1,
+                end: self.index,
             });
             first_segment.cst.extend(self.parse_comma_wsp()?);
         }
@@ -915,34 +920,18 @@ impl<'a> Parser<'a> {
 
                 for _ in 0..2 {
                     next_nodes.extend(self.parse_whitespaces());
-                    self.check_unexpected_end("arc flag (0 or 1)")?;
 
-                    let SVGPathCSTNode::Number {
-                        raw_number,
-                        value,
-                        start,
-                        end,
-                    } = self.parse_number()?
-                    else {
-                        unreachable!()
-                    };
-                    if value != 0.0 && value != 1.0 {
-                        return Err(SyntaxError::InvalidArcFlag {
-                            index: self.index,
-                            value,
-                            command: match segment.command {
-                                SVGPathCommand::ArcLower => 'a',
-                                _ => 'A',
-                            },
-                        });
-                    }
-
+                    let value = self.parse_flag()?;
                     segment.args.push(value);
                     segment.cst.push(SVGPathCSTNode::Number {
-                        raw_number,
+                        raw_number: if value == 0.0 {
+                            "0".to_string()
+                        } else {
+                            "1".to_string()
+                        },
                         value,
-                        start,
-                        end,
+                        start: self.index - 1,
+                        end: self.index,
                     });
                     segment.cst.extend(self.parse_comma_wsp()?);
                 }
