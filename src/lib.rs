@@ -486,7 +486,6 @@ impl<'a> Parser<'a> {
 
     fn parse_comma_wsp(&mut self) -> Result<Vec<SVGPathCSTNode>, SyntaxError> {
         let mut comma_wsp = vec![];
-        println!("parse_comma_wsp");
         if let Some(next) = self.chars.peek() {
             if *next == ',' {
                 comma_wsp.push(SVGPathCSTNode::Comma { start: self.index });
@@ -871,7 +870,6 @@ impl<'a> Parser<'a> {
                     command: command.to_char(),
                 });
             }
-            println!("parsed number: {}", raw_number);
 
             first_segment.args.push(value);
             first_segment.cst.push(SVGPathCSTNode::Number {
