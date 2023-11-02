@@ -849,7 +849,10 @@ impl<'a> Parser<'a> {
                 value,
                 start,
                 end,
-            } = self.parse_number()? else { unreachable!() };
+            } = self.parse_number()?
+            else {
+                unreachable!()
+            };
             if value != 0.0 && value != 1.0 {
                 return Err(SyntaxError::InvalidArcFlag {
                     index: self.index,
