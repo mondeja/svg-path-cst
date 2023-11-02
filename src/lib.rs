@@ -608,9 +608,15 @@ impl<'a> Parser<'a> {
 
     fn parse_coordinate(&mut self) -> Result<Coordinate, SyntaxError> {
         let sign_node = self.parse_sign();
-        let SVGPathCSTNode::Number{
-            value, start, end, raw_number
-        } = self.parse_number()? else { unreachable!() };
+        let SVGPathCSTNode::Number {
+            value,
+            start,
+            end,
+            raw_number,
+        } = self.parse_number()?
+        else {
+            unreachable!()
+        };
 
         let coord_value = if let Some(SVGPathCSTNode::Sign { sign, .. }) = &sign_node {
             match sign {
@@ -903,7 +909,10 @@ impl<'a> Parser<'a> {
                         value,
                         start,
                         end,
-                    } = self.parse_number()? else { unreachable!() };
+                    } = self.parse_number()?
+                    else {
+                        unreachable!()
+                    };
                     if value != 0.0 && value != 1.0 {
                         return Err(SyntaxError::InvalidArcFlag {
                             index: self.index,
