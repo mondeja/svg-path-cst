@@ -513,6 +513,7 @@ impl<'a> Parser<'a> {
 
     fn parse_number(&mut self) -> Result<SVGPathCSTNode, SyntaxError> {
         let mut number = String::new();
+        let mut processed = String::new();
         let mut has_dot = false;
         let mut has_e = false;
         let mut has_sign = false;
@@ -520,6 +521,7 @@ impl<'a> Parser<'a> {
         let start = self.index;
 
         while let Some(next) = self.chars.peek() {
+            processed.push(*next);
             match next {
                 '0' => {
                     if number == "0" {
@@ -542,8 +544,9 @@ impl<'a> Parser<'a> {
                 'e' | 'E' => {
                     if has_e {
                         return Err(SyntaxError::InvalidNumber {
-                            number: number.clone(),
-                            index: self.index,
+                            number: processed.clone(),
+                            start,
+                            end: start + processed.clone().len(),
                         });
                     }
                     number.push(*next);
@@ -574,8 +577,9 @@ impl<'a> Parser<'a> {
 
         if !has_digit {
             return Err(SyntaxError::InvalidNumber {
-                number: number.clone(),
-                index: self.index,
+                number: processed.clone(),
+                start,
+                end: start + processed.clone().len(),
             });
         }
 
@@ -587,8 +591,9 @@ impl<'a> Parser<'a> {
                 end: self.index,
             }),
             Err(_) => Err(SyntaxError::InvalidNumber {
-                number: number.clone(),
-                index: self.index,
+                number: processed.clone(),
+                start,
+                end: start + processed.clone().len(),
             }),
         }
     }
@@ -616,20 +621,18 @@ impl<'a> Parser<'a> {
         None
     }
 
-    fn parse_flag(&mut self) -> Result<f64, SyntaxError> {
-        let next = self.next_char();
-        if next.is_none() {
-            return Err(SyntaxError::UnexpectedEnding {
+    fn parse_flag(&mut self, command: char) -> Result<f64, SyntaxError> {
+        match self.next_char() {
+            Some('0') => Ok(0.0),
+            Some('1') => Ok(1.0),
+            Some(character) => Err(SyntaxError::InvalidArcFlag {
+                index: self.index - 1,
+                character,
+                command,
+            }),
+            None => Err(SyntaxError::UnexpectedEnding {
                 index: self.index,
                 expected: "flag (0 or 1)".to_string(),
-            });
-        }
-        match next.unwrap() {
-            '0' => Ok(0.0),
-            '1' => Ok(1.0),
-            _ => Err(SyntaxError::InvalidArcFlag {
-                index: self.index,
-                character: next.unwrap(),
             }),
         }
     }
@@ -851,18 +854,21 @@ impl<'a> Parser<'a> {
         &mut self,
         command: &'static SVGPathCommand,
     ) -> Result<Vec<SVGPathCSTNode>, SyntaxError> {
+        let command_as_letter = command.to_char();
         let mut first_segment = new_segment(command, self.index - 1, false);
         first_segment.cst.push(SVGPathCSTNode::Command(command));
         first_segment.cst.extend(self.parse_whitespaces());
 
         for _ in 0..3 {
             self.check_unexpected_end("number")?;
+            let index_before_parse_radius = self.index;
             let (sign_node, number_node, value) = self.parse_coordinate()?;
             if sign_node.is_some() || value > 360.0 {
                 return Err(SyntaxError::InvalidArcRadius {
-                    index: self.index,
+                    start: index_before_parse_radius,
+                    end: self.index,
                     value,
-                    command: command.to_char(),
+                    command: command_as_letter,
                 });
             }
             first_segment.args.push(value);
@@ -871,7 +877,7 @@ impl<'a> Parser<'a> {
         }
 
         for _ in 0..2 {
-            let value = self.parse_flag()?;
+            let value = self.parse_flag(command_as_letter)?;
             first_segment.args.push(value);
             first_segment.cst.push(SVGPathCSTNode::Number {
                 raw_number: if value == 0.0 {
@@ -904,12 +910,14 @@ impl<'a> Parser<'a> {
                     next_nodes.extend(self.parse_whitespaces());
                     self.check_unexpected_end("number")?;
 
+                    let index_before_parse_radius = self.index;
                     let (sign_node, number_node, value) = self.parse_coordinate()?;
                     if sign_node.is_some() || value > 360.0 {
                         return Err(SyntaxError::InvalidArcRadius {
-                            index: self.index,
+                            start: index_before_parse_radius,
+                            end: self.index,
                             value,
-                            command: command.to_char(),
+                            command: command_as_letter,
                         });
                     }
 
@@ -921,7 +929,7 @@ impl<'a> Parser<'a> {
                 for _ in 0..2 {
                     next_nodes.extend(self.parse_whitespaces());
 
-                    let value = self.parse_flag()?;
+                    let value = self.parse_flag(command_as_letter)?;
                     segment.args.push(value);
                     segment.cst.push(SVGPathCSTNode::Number {
                         raw_number: if value == 0.0 {
@@ -1085,7 +1093,7 @@ impl<'a> Parser<'a> {
             } else {
                 return Err(SyntaxError::ExpectedMovetoCommand {
                     command: next,
-                    index: self.index - 1,
+                    start: self.index - 1,
                 });
             }
         }
