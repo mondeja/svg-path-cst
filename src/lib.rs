@@ -335,7 +335,10 @@ pub enum SVGPathCSTNode {
         end: usize,
     },
     /// Comma token
-    Comma,
+    Comma {
+        /// Start index of the comma in the SVG path string
+        start: usize,
+    },
     /// SVG path command token
     Command(&'static SVGPathCommand),
 }
@@ -485,14 +488,14 @@ impl<'a> Parser<'a> {
         let mut comma_wsp = vec![];
         if let Some(next) = self.chars.peek() {
             if *next == ',' {
+                comma_wsp.push(SVGPathCSTNode::Comma { start: self.index });
                 self.next_char();
-                comma_wsp.push(SVGPathCSTNode::Comma);
                 comma_wsp.extend(self.parse_whitespaces());
             } else {
                 comma_wsp.extend(self.parse_whitespaces());
                 if let Some(next_after_wsp) = self.chars.peek() {
                     if *next_after_wsp == ',' {
-                        comma_wsp.push(SVGPathCSTNode::Comma);
+                        comma_wsp.push(SVGPathCSTNode::Comma { start: self.index });
                         self.next_char();
                         comma_wsp.extend(self.parse_whitespaces());
                     }

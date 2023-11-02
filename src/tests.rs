@@ -595,7 +595,7 @@ fn moveto_curveto() {
                         start: 5,
                         end: 8,
                     },
-                    SVGPathCSTNode::Comma,
+                    SVGPathCSTNode::Comma { start: 8 },
                     SVGPathCSTNode::Number {
                         raw_number: "100".to_string(),
                         value: 100.0,
@@ -613,7 +613,7 @@ fn moveto_curveto() {
                         start: 13,
                         end: 16,
                     },
-                    SVGPathCSTNode::Comma,
+                    SVGPathCSTNode::Comma { start: 16 },
                     SVGPathCSTNode::Number {
                         raw_number: "100".to_string(),
                         value: 100.0,
@@ -631,7 +631,7 @@ fn moveto_curveto() {
                         start: 21,
                         end: 24,
                     },
-                    SVGPathCSTNode::Comma,
+                    SVGPathCSTNode::Comma { start: 24 },
                     SVGPathCSTNode::Number {
                         raw_number: "200".to_string(),
                         value: 200.0,
@@ -660,7 +660,7 @@ fn moveto_curveto() {
                         start: 29,
                         end: 32,
                     },
-                    SVGPathCSTNode::Comma,
+                    SVGPathCSTNode::Comma { start: 32 },
                     SVGPathCSTNode::Number {
                         raw_number: "200".to_string(),
                         value: 200.0,
@@ -678,7 +678,7 @@ fn moveto_curveto() {
                         start: 37,
                         end: 40,
                     },
-                    SVGPathCSTNode::Comma,
+                    SVGPathCSTNode::Comma { start: 40 },
                     SVGPathCSTNode::Number {
                         raw_number: "200".to_string(),
                         value: 200.0,
@@ -696,7 +696,7 @@ fn moveto_curveto() {
                         start: 45,
                         end: 48,
                     },
-                    SVGPathCSTNode::Comma,
+                    SVGPathCSTNode::Comma { start: 48 },
                     SVGPathCSTNode::Number {
                         raw_number: "400".to_string(),
                         value: 400.0,
@@ -759,7 +759,7 @@ fn moveto_smooth_curveto() {
                         start: 5,
                         end: 8,
                     },
-                    SVGPathCSTNode::Comma,
+                    SVGPathCSTNode::Comma { start: 8 },
                     SVGPathCSTNode::Number {
                         raw_number: "100".to_string(),
                         value: 100.0,
@@ -777,7 +777,7 @@ fn moveto_smooth_curveto() {
                         start: 13,
                         end: 16,
                     },
-                    SVGPathCSTNode::Comma,
+                    SVGPathCSTNode::Comma { start: 16 },
                     SVGPathCSTNode::Number {
                         raw_number: "200".to_string(),
                         value: 200.0,
@@ -895,7 +895,7 @@ fn moveto_arc() {
                         start: 5,
                         end: 8,
                     },
-                    SVGPathCSTNode::Comma,
+                    SVGPathCSTNode::Comma { start: 8 },
                     SVGPathCSTNode::Number {
                         raw_number: "100".to_string(),
                         value: 100.0,
@@ -946,7 +946,7 @@ fn moveto_arc() {
                         start: 19,
                         end: 22,
                     },
-                    SVGPathCSTNode::Comma,
+                    SVGPathCSTNode::Comma { start: 22 },
                     SVGPathCSTNode::Number {
                         raw_number: "200".to_string(),
                         value: 200.0,
@@ -1109,7 +1109,7 @@ fn moveto_quadratic() {
                         start: 5,
                         end: 8,
                     },
-                    SVGPathCSTNode::Comma,
+                    SVGPathCSTNode::Comma { start: 8 },
                     SVGPathCSTNode::Number {
                         raw_number: "100".to_string(),
                         value: 100.0,
@@ -1127,7 +1127,7 @@ fn moveto_quadratic() {
                         start: 13,
                         end: 16,
                     },
-                    SVGPathCSTNode::Comma,
+                    SVGPathCSTNode::Comma { start: 16 },
                     SVGPathCSTNode::Number {
                         raw_number: "200".to_string(),
                         value: 200.0,
@@ -1245,7 +1245,7 @@ fn moveto_smooth_quadratic() {
                         start: 5,
                         end: 8,
                     },
-                    SVGPathCSTNode::Comma,
+                    SVGPathCSTNode::Comma { start: 8 },
                     SVGPathCSTNode::Number {
                         raw_number: "100".to_string(),
                         value: 100.0,
@@ -1274,7 +1274,7 @@ fn moveto_smooth_quadratic() {
                         start: 13,
                         end: 16,
                     },
-                    SVGPathCSTNode::Comma,
+                    SVGPathCSTNode::Comma { start: 16 },
                     SVGPathCSTNode::Number {
                         raw_number: "200".to_string(),
                         value: 200.0,

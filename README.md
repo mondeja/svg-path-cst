@@ -73,7 +73,7 @@ assert_eq!(
                     start: 6,
                     end: 7,
                 },
-                SVGPathCSTNode::Comma,
+                SVGPathCSTNode::Comma{ start: 7 },
                 SVGPathCSTNode::Sign{ sign: &Sign::Minus, start: 8 },
                 SVGPathCSTNode::Number{
                     raw_number: "1".to_string(),
