@@ -48,8 +48,19 @@ pub enum SyntaxError {
     },
 
     /// Invalid SVG quaractic arc command flag argument.
-    #[snafu(display("Invalid SVG path elliptical arc command '{command}' at index {index}. Expected 0 or 1 (flag) but found '{value}'"))]
+    #[snafu(display("Invalid SVG path elliptical arc command '{command}' flag at index {index}. Expected 0 or 1 but found '{value}'"))]
     InvalidArcFlag {
+        /// Command letter found
+        command: char,
+        /// Index of the command in the path
+        index: usize,
+        /// Value found
+        value: f64,
+    },
+
+    /// Invalid SVG quaractic arc command radius argument.
+    #[snafu(display("Invalid SVG path elliptical arc command '{command}' radius at index {index}. Expected positive number but found '{value}'"))]
+    InvalidArcRadius {
         /// Command letter found
         command: char,
         /// Index of the command in the path
