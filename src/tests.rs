@@ -1058,8 +1058,7 @@ fn invalid_arc_flag() {
         "m0 0a100,100 0 2 1 250,200",
         SyntaxError::InvalidArcFlag {
             index: 16,
-            value: 2.0,
-            command: 'a',
+            character: '2',
         }
     );
 }
@@ -1300,6 +1299,117 @@ fn invalid_multiple_commas() {
             number: "".to_string(),
             index: 4,
         }
+    );
+}
+
+#[test]
+fn arc_with_flags_together() {
+    assert_svg_path_cst!(
+        "m0 0a1.862 1.862 0 00-.248.033",
+        vec![
+            SVGPathCSTNode::Segment(SVGPathSegment {
+                command: &SVGPathCommand::MovetoLower,
+                args: vec![0.0, 0.0],
+                cst: vec![
+                    SVGPathCSTNode::Command(&SVGPathCommand::MovetoLower),
+                    SVGPathCSTNode::Number {
+                        raw_number: "0".to_string(),
+                        value: 0.0,
+                        start: 1,
+                        end: 2,
+                    },
+                    SVGPathCSTNode::Whitespace {
+                        wsp: &WSP::Space,
+                        start: 2,
+                        end: 3,
+                    },
+                    SVGPathCSTNode::Number {
+                        raw_number: "0".to_string(),
+                        value: 0.0,
+                        start: 3,
+                        end: 4,
+                    },
+                ],
+                start: 0,
+                end: 4,
+                chained: false,
+                chain_start: 0,
+                chain_end: 4,
+            }),
+            SVGPathCSTNode::Segment(SVGPathSegment {
+                command: &SVGPathCommand::ArcLower,
+                args: vec![1.862, 1.862, 0.0, 0.0, 0.0, -0.248, 0.033],
+                cst: vec![
+                    SVGPathCSTNode::Command(&SVGPathCommand::ArcLower),
+                    SVGPathCSTNode::Number {
+                        raw_number: "1.862".to_string(),
+                        value: 1.862,
+                        start: 5,
+                        end: 10,
+                    },
+                    SVGPathCSTNode::Whitespace {
+                        wsp: &WSP::Space,
+                        start: 10,
+                        end: 11,
+                    },
+                    SVGPathCSTNode::Number {
+                        raw_number: "1.862".to_string(),
+                        value: 1.862,
+                        start: 11,
+                        end: 16,
+                    },
+                    SVGPathCSTNode::Whitespace {
+                        wsp: &WSP::Space,
+                        start: 16,
+                        end: 17,
+                    },
+                    SVGPathCSTNode::Number {
+                        raw_number: "0".to_string(),
+                        value: 0.0,
+                        start: 17,
+                        end: 18,
+                    },
+                    SVGPathCSTNode::Whitespace {
+                        wsp: &WSP::Space,
+                        start: 18,
+                        end: 19,
+                    },
+                    SVGPathCSTNode::Number {
+                        raw_number: "0".to_string(),
+                        value: 0.0,
+                        start: 19,
+                        end: 20,
+                    },
+                    SVGPathCSTNode::Number {
+                        raw_number: "0".to_string(),
+                        value: 0.0,
+                        start: 20,
+                        end: 21,
+                    },
+                    SVGPathCSTNode::Sign {
+                        sign: &Sign::Minus,
+                        start: 21,
+                    },
+                    SVGPathCSTNode::Number {
+                        raw_number: ".248".to_string(),
+                        value: 0.248,
+                        start: 22,
+                        end: 26,
+                    },
+                    SVGPathCSTNode::Number {
+                        raw_number: ".033".to_string(),
+                        value: 0.033,
+                        start: 26,
+                        end: 30,
+                    },
+                ],
+                start: 4,
+                end: 30,
+                chained: false,
+                chain_start: 4,
+                chain_end: 30,
+            }),
+        ]
     );
 }
 
