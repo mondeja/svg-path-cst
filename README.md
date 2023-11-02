@@ -31,6 +31,11 @@ assert_eq!(
         SVGPathCSTNode::Segment(SVGPathSegment{
             command: &SVGPathCommand::MovetoLower,
             args: vec![0.0, 0.0],
+            start: 0,
+            end: 4,
+            chained: false,
+            chain_start: 0,
+            chain_end: 4,
             cst: vec![
                 SVGPathCSTNode::Command(&SVGPathCommand::MovetoLower),
                 SVGPathCSTNode::Number{
@@ -51,11 +56,6 @@ assert_eq!(
                     end: 4,
                 },
             ],
-            start: 0,
-            end: 4,
-            chained: false,
-            chain_start: 0,
-            chain_end: 4,
         }),
         SVGPathCSTNode::Whitespace{
             wsp: &WSP::Space,
@@ -65,6 +65,11 @@ assert_eq!(
         SVGPathCSTNode::Segment(SVGPathSegment{
             command: &SVGPathCommand::LinetoUpper,
             args: vec![1.0, -1.0],
+            start: 5,
+            end: 10,
+            chained: false,
+            chain_start: 5,
+            chain_end: 10,
             cst: vec![
                 SVGPathCSTNode::Command(&SVGPathCommand::LinetoUpper),
                 SVGPathCSTNode::Number{
@@ -82,11 +87,6 @@ assert_eq!(
                     end: 10,
                 },
             ],
-            start: 5,
-            end: 10,
-            chained: false,
-            chain_start: 5,
-            chain_end: 10,
         }),
     ])
 );
