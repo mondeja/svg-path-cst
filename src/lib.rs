@@ -854,7 +854,7 @@ impl<'a> Parser<'a> {
         &mut self,
         command: &'static SVGPathCommand,
     ) -> Result<Vec<SVGPathCSTNode>, SyntaxError> {
-        let command_as_letter = command.to_char();
+        let command_as_char = command.to_char();
         let mut first_segment = new_segment(command, self.index - 1, false);
         first_segment.cst.push(SVGPathCSTNode::Command(command));
         first_segment.cst.extend(self.parse_whitespaces());
@@ -868,7 +868,7 @@ impl<'a> Parser<'a> {
                     start: index_before_parse_radius,
                     end: self.index,
                     value,
-                    command: command_as_letter,
+                    command: command_as_char,
                 });
             }
             first_segment.args.push(value);
@@ -877,7 +877,7 @@ impl<'a> Parser<'a> {
         }
 
         for _ in 0..2 {
-            let value = self.parse_flag(command_as_letter)?;
+            let value = self.parse_flag(command_as_char)?;
             first_segment.args.push(value);
             first_segment.cst.push(SVGPathCSTNode::Number {
                 raw_number: if value == 0.0 {
@@ -917,7 +917,7 @@ impl<'a> Parser<'a> {
                             start: index_before_parse_radius,
                             end: self.index,
                             value,
-                            command: command_as_letter,
+                            command: command_as_char,
                         });
                     }
 
@@ -929,7 +929,7 @@ impl<'a> Parser<'a> {
                 for _ in 0..2 {
                     next_nodes.extend(self.parse_whitespaces());
 
-                    let value = self.parse_flag(command_as_letter)?;
+                    let value = self.parse_flag(command_as_char)?;
                     segment.args.push(value);
                     segment.cst.push(SVGPathCSTNode::Number {
                         raw_number: if value == 0.0 {
@@ -1093,7 +1093,7 @@ impl<'a> Parser<'a> {
             } else {
                 return Err(SyntaxError::ExpectedMovetoCommand {
                     command: next,
-                    start: self.index - 1,
+                    index: self.index - 1,
                 });
             }
         }

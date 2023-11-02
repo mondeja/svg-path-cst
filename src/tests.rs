@@ -137,7 +137,7 @@ fn invalid_moveto_at_start() {
         "A 10 10",
         SyntaxError::ExpectedMovetoCommand {
             command: 'A',
-            start: 0,
+            index: 0,
         }
     );
 }
@@ -148,7 +148,7 @@ fn invalid_moveto_after_wsp() {
         " \t\n\r \x0C A 10 10",
         SyntaxError::ExpectedMovetoCommand {
             command: 'A',
-            start: 7,
+            index: 7,
         }
     );
 }

@@ -7,13 +7,13 @@ use snafu::prelude::*;
 pub enum SyntaxError {
     /// The first command in a path is not moveto.
     #[snafu(display(
-        "Invalid SVG path command '{command}' at index {start}, expected 'M' or 'm'"
+        "Invalid SVG path command '{command}' at index {index}, expected 'M' or 'm'"
     ))]
     ExpectedMovetoCommand {
         /// Command letter found
         command: char,
         /// Index of the command in the path
-        start: usize,
+        index: usize,
     },
 
     /// Invalid number found in path.
