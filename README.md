@@ -21,20 +21,35 @@ use svg_path_cst::{
     SVGPathSegment,
     SVGPathCommand,
     WSP,
+    Sign,
 };
 
-let cst = svg_path_cst("m0 0 L1,1");
+let cst = svg_path_cst("m0 0 L1,-1");
 assert_eq!(
     cst,
     Ok(vec![
-        SVGPathCSTNode::Segment(SVGPathSegment {
+        SVGPathCSTNode::Segment(SVGPathSegment{
             command: &SVGPathCommand::MovetoLower,
             args: vec![0.0, 0.0],
             cst: vec![
                 SVGPathCSTNode::Command(&SVGPathCommand::MovetoLower),
-                SVGPathCSTNode::Number("0".to_string()),
-                SVGPathCSTNode::Whitespace(&WSP::Space),
-                SVGPathCSTNode::Number("0".to_string()),
+                SVGPathCSTNode::Number{
+                    raw_number: "0".to_string(),
+                    value: 0.0,
+                    start: 1,
+                    end: 2,
+                },
+                SVGPathCSTNode::Whitespace{
+                    wsp: &WSP::Space,
+                    start: 2,
+                    end: 3,
+                },
+                SVGPathCSTNode::Number{
+                    raw_number: "0".to_string(),
+                    value: 0.0,
+                    start: 3,
+                    end: 4,
+                },
             ],
             start: 0,
             end: 4,
@@ -42,21 +57,36 @@ assert_eq!(
             chain_start: 0,
             chain_end: 4,
         }),
-        SVGPathCSTNode::Whitespace(&WSP::Space),
-        SVGPathCSTNode::Segment(SVGPathSegment {
+        SVGPathCSTNode::Whitespace{
+            wsp: &WSP::Space,
+            start: 4,
+            end: 5,
+        },
+        SVGPathCSTNode::Segment(SVGPathSegment{
             command: &SVGPathCommand::LinetoUpper,
-            args: vec![1.0, 1.0],
+            args: vec![1.0, -1.0],
             cst: vec![
                 SVGPathCSTNode::Command(&SVGPathCommand::LinetoUpper),
-                SVGPathCSTNode::Number("1".to_string()),
+                SVGPathCSTNode::Number{
+                    raw_number: "1".to_string(),
+                    value: 1.0,
+                    start: 6,
+                    end: 7,
+                },
                 SVGPathCSTNode::Comma,
-                SVGPathCSTNode::Number("1".to_string()),
+                SVGPathCSTNode::Sign{ sign: &Sign::Minus, start: 8 },
+                SVGPathCSTNode::Number{
+                    raw_number: "1".to_string(),
+                    value: 1.0,
+                    start: 9,
+                    end: 10,
+                },
             ],
             start: 5,
-            end: 9,
+            end: 10,
             chained: false,
             chain_start: 5,
-            chain_end: 9,
+            chain_end: 10,
         }),
     ])
 );
