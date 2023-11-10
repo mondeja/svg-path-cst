@@ -17,12 +17,14 @@ pub enum SyntaxError {
     },
 
     /// Invalid number found in path.
-    #[snafu(display("Invalid number '{number}' at index {index}"))]
+    #[snafu(display("Invalid number '{number}' at index {start}"))]
     InvalidNumber {
         /// Number found
         number: String,
         /// Index of the number in the path
-        index: usize,
+        start: usize,
+        /// Index of the end of the number in the path
+        end: usize,
     },
 
     /// Invalid character found in path.
@@ -50,19 +52,23 @@ pub enum SyntaxError {
     /// Invalid SVG quaractic arc command flag argument.
     #[snafu(display("Invalid SVG path elliptical arc flag at index {index}. Expected 0 or 1 but found '{character}'"))]
     InvalidArcFlag {
-        /// Command letter found
+        /// Command letter
+        command: char,
+        /// Character found instead of valid arc flag (0 or 1)
         character: char,
         /// Index of the command in the path
         index: usize,
     },
 
     /// Invalid SVG quaractic arc command radius argument.
-    #[snafu(display("Invalid SVG path elliptical arc command '{command}' radius at index {index}. Expected positive number but found '{value}'"))]
+    #[snafu(display("Invalid SVG path elliptical arc command '{command}' radius at index {start}. Expected positive number but found '{value}'"))]
     InvalidArcRadius {
-        /// Command letter found
+        /// Command letter
         command: char,
         /// Index of the command in the path
-        index: usize,
+        start: usize,
+        /// Index of the end of the number in the path
+        end: usize,
         /// Value found
         value: f64,
     },

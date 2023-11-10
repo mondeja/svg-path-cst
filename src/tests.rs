@@ -1057,8 +1057,9 @@ fn invalid_arc_flag() {
     assert_svg_path_cst_err!(
         "m0 0a100,100 0 2 1 250,200",
         SyntaxError::InvalidArcFlag {
-            index: 16,
+            index: 15,
             character: '2',
+            command: 'a',
         }
     );
 }
@@ -1296,8 +1297,9 @@ fn invalid_multiple_commas() {
     assert_svg_path_cst_err!(
         "m0 0,,100,100",
         SyntaxError::InvalidNumber {
-            number: "".to_string(),
-            index: 4,
+            number: ",".to_string(),
+            start: 4,
+            end: 5,
         }
     );
 }
