@@ -1,6 +1,13 @@
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 #![doc(test(attr(deny(warnings))))]
+#![no_std]
+
+extern crate alloc;
+use crate::alloc::{
+    string::{String, ToString},
+    vec::Vec,
+};
 
 #[cfg(doctest)]
 ::doc_comment::doctest!("../README.md");
@@ -8,16 +15,14 @@
 #[cfg(test)]
 mod tests;
 
-use std::iter::Peekable;
-use std::str::Chars;
 mod errors;
 pub use errors::SyntaxError;
 
-static COMMAND_CHARACTERS: [char; 20] = [
-    'M', 'm', 'V', 'v', 'H', 'h', 'L', 'l', 'Z', 'z', 'C', 'c', 'S', 's', 'Q', 'q',
-    'T', 't', 'A', 'a',
+static COMMAND_CHARACTERS: [u8; 20] = [
+    b'M', b'm', b'V', b'v', b'H', b'h', b'L', b'l', b'Z', b'z', b'C', b'c', b'S', b's',
+    b'Q', b'q', b'T', b't', b'A', b'a',
 ];
-static WSP_COMMA_CHARACTERS: [char; 6] = [' ', '\t', '\n', '\x0C', '\r', ','];
+static WSP_COMMA_CHARACTERS: [u8; 6] = [b' ', b'\t', b'\n', b'\x0C', b'\r', b','];
 
 // Sign, number and value
 type Coordinate = (Option<SVGPathCSTNode>, SVGPathCSTNode, f64);
@@ -94,29 +99,29 @@ impl SVGPathCommand {
         }
     }
 
-    /// Returns the SVG path command character
-    pub fn to_char(&self) -> char {
+    /// Returns the SVG path command character as `u8`
+    pub fn to_u8(&self) -> u8 {
         match self {
-            SVGPathCommand::MovetoUpper => 'M',
-            SVGPathCommand::MovetoLower => 'm',
-            SVGPathCommand::LinetoUpper => 'L',
-            SVGPathCommand::LinetoLower => 'l',
-            SVGPathCommand::HorizontalUpper => 'H',
-            SVGPathCommand::HorizontalLower => 'h',
-            SVGPathCommand::VerticalUpper => 'V',
-            SVGPathCommand::VerticalLower => 'v',
-            SVGPathCommand::ClosepathUpper => 'Z',
-            SVGPathCommand::ClosepathLower => 'z',
-            SVGPathCommand::CurvetoUpper => 'C',
-            SVGPathCommand::CurvetoLower => 'c',
-            SVGPathCommand::SmoothCurvetoUpper => 'S',
-            SVGPathCommand::SmoothCurvetoLower => 's',
-            SVGPathCommand::ArcUpper => 'A',
-            SVGPathCommand::ArcLower => 'a',
-            SVGPathCommand::QuadraticUpper => 'Q',
-            SVGPathCommand::QuadraticLower => 'q',
-            SVGPathCommand::SmoothQuadraticUpper => 'T',
-            SVGPathCommand::SmoothQuadraticLower => 't',
+            SVGPathCommand::MovetoUpper => b'M',
+            SVGPathCommand::MovetoLower => b'm',
+            SVGPathCommand::LinetoUpper => b'L',
+            SVGPathCommand::LinetoLower => b'l',
+            SVGPathCommand::HorizontalUpper => b'H',
+            SVGPathCommand::HorizontalLower => b'h',
+            SVGPathCommand::VerticalUpper => b'V',
+            SVGPathCommand::VerticalLower => b'v',
+            SVGPathCommand::ClosepathUpper => b'Z',
+            SVGPathCommand::ClosepathLower => b'z',
+            SVGPathCommand::CurvetoUpper => b'C',
+            SVGPathCommand::CurvetoLower => b'c',
+            SVGPathCommand::SmoothCurvetoUpper => b'S',
+            SVGPathCommand::SmoothCurvetoLower => b's',
+            SVGPathCommand::ArcUpper => b'A',
+            SVGPathCommand::ArcLower => b'a',
+            SVGPathCommand::QuadraticUpper => b'Q',
+            SVGPathCommand::QuadraticLower => b'q',
+            SVGPathCommand::SmoothQuadraticUpper => b'T',
+            SVGPathCommand::SmoothQuadraticLower => b't',
         }
     }
 }
@@ -134,7 +139,7 @@ impl SVGPathCommand {
 /// ```
 /// use svg_path_cst::{svg_path_cst, SVGPathCSTNode, WSP};
 ///
-/// let cst = svg_path_cst(" \t\n\r \x0C");
+/// let cst = svg_path_cst(b" \t\n\r \x0C");
 /// assert_eq!(
 ///     cst,
 ///     Ok(vec![
@@ -174,7 +179,7 @@ impl SVGPathCommand {
 /// for node in cst.unwrap() {
 ///     match node {
 ///         SVGPathCSTNode::Whitespace{wsp, start, ..} => {
-///             println!("\"{}\" at index {}", wsp.to_char(), start);
+///             println!("'{}' at index {}", wsp.to_u8() as char, start);
 ///         },
 ///         _ => (),
 ///     }
@@ -195,14 +200,14 @@ pub enum WSP {
 }
 
 impl WSP {
-    /// Returns the whitespace character
-    pub fn to_char(&self) -> char {
+    /// Returns the whitespace character as `u8`
+    pub fn to_u8(&self) -> u8 {
         match self {
-            WSP::Space => ' ',
-            WSP::Tab => '\t',
-            WSP::LineFeed => '\n',
-            WSP::FormFeed => '\x0C',
-            WSP::CarriageReturn => '\r',
+            WSP::Space => b' ',
+            WSP::Tab => b'\t',
+            WSP::LineFeed => b'\n',
+            WSP::FormFeed => b'\x0C',
+            WSP::CarriageReturn => b'\r',
         }
     }
 }
@@ -222,7 +227,7 @@ impl WSP {
 ///     svg_path_cst, SVGPathCSTNode, SVGPathCommand, SVGPathSegment, Sign,
 /// };
 ///
-/// let cst = svg_path_cst("M+10-10");
+/// let cst = svg_path_cst(b"M+10-10");
 /// assert_eq!(
 ///     cst,
 ///     Ok(vec![
@@ -268,7 +273,7 @@ impl WSP {
 ///                Sign::Plus => println!("+"),
 ///                Sign::Minus => println!("-"),
 ///             }
-///             // or just println!("{}", sign.to_char());`
+///             // or just println!("{}", sign.to_u8() as char);`
 ///         }
 ///         _ => (),
 ///     }
@@ -283,11 +288,11 @@ pub enum Sign {
 }
 
 impl Sign {
-    /// Returns the sign character
-    pub fn to_char(&self) -> char {
+    /// Returns the sign character as `u8`
+    pub fn to_u8(&self) -> u8 {
         match self {
-            Sign::Plus => '+',
-            Sign::Minus => '-',
+            Sign::Plus => b'+',
+            Sign::Minus => b'-',
         }
     }
 }
@@ -406,26 +411,32 @@ macro_rules! set_commands_chain_info {
 #[derive(Clone)]
 struct Parser<'a> {
     index: usize,
-    path: &'a str,
-    chars: Peekable<Chars<'a>>,
+    path: &'a [u8],
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(path: &'a str) -> Self {
-        Self {
-            index: 0,
-            path,
-            chars: path.chars().peekable(),
-        }
+    pub fn new(path: &'a [u8]) -> Self {
+        Self { index: 0, path }
     }
 
-    fn next_char(&mut self) -> Option<char> {
+    fn next(&mut self) -> Option<u8> {
+        if self.index >= self.path.len() {
+            return None;
+        }
+        let ch = self.path[self.index];
         self.index += 1;
-        self.chars.next()
+        Some(ch)
+    }
+
+    fn peek(&mut self) -> Option<u8> {
+        if self.index >= self.path.len() {
+            return None;
+        }
+        Some(self.path[self.index])
     }
 
     fn check_unexpected_end(&mut self, expected: &str) -> Result<(), SyntaxError> {
-        if self.chars.peek().is_none() {
+        if self.peek().is_none() {
             return Err(SyntaxError::UnexpectedEnding {
                 index: self.index - 1,
                 expected: expected.to_string(),
@@ -435,48 +446,48 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_whitespaces(&mut self) -> Vec<SVGPathCSTNode> {
-        let mut whitespaces = vec![];
-        while let Some(next) = self.chars.peek() {
+        let mut whitespaces = Vec::new();
+        while let Some(next) = self.peek() {
             match next {
-                ' ' => {
+                b' ' => {
                     whitespaces.push(SVGPathCSTNode::Whitespace {
                         wsp: &WSP::Space,
                         start: self.index,
                         end: self.index + 1,
                     });
-                    self.next_char();
+                    self.next();
                 }
-                '\t' => {
+                b'\t' => {
                     whitespaces.push(SVGPathCSTNode::Whitespace {
                         wsp: &WSP::Tab,
                         start: self.index,
                         end: self.index + 1,
                     });
-                    self.next_char();
+                    self.next();
                 }
-                '\n' => {
+                b'\n' => {
                     whitespaces.push(SVGPathCSTNode::Whitespace {
                         wsp: &WSP::LineFeed,
                         start: self.index,
                         end: self.index + 1,
                     });
-                    self.next_char();
+                    self.next();
                 }
-                '\x0C' => {
+                b'\x0C' => {
                     whitespaces.push(SVGPathCSTNode::Whitespace {
                         wsp: &WSP::FormFeed,
                         start: self.index,
                         end: self.index + 1,
                     });
-                    self.next_char();
+                    self.next();
                 }
-                '\r' => {
+                b'\r' => {
                     whitespaces.push(SVGPathCSTNode::Whitespace {
                         wsp: &WSP::CarriageReturn,
                         start: self.index,
                         end: self.index + 1,
                     });
-                    self.next_char();
+                    self.next();
                 }
                 _ => break,
             }
@@ -485,18 +496,18 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_comma_wsp(&mut self) -> Result<Vec<SVGPathCSTNode>, SyntaxError> {
-        let mut comma_wsp = vec![];
-        if let Some(next) = self.chars.peek() {
-            if *next == ',' {
+        let mut comma_wsp = Vec::new();
+        if let Some(next) = self.peek() {
+            if next == b',' {
                 comma_wsp.push(SVGPathCSTNode::Comma { start: self.index });
-                self.next_char();
+                self.next();
                 comma_wsp.extend(self.parse_whitespaces());
             } else {
                 comma_wsp.extend(self.parse_whitespaces());
-                if let Some(next_after_wsp) = self.chars.peek() {
-                    if *next_after_wsp == ',' {
+                if let Some(next_after_wsp) = self.peek() {
+                    if next_after_wsp == b',' {
                         comma_wsp.push(SVGPathCSTNode::Comma { start: self.index });
-                        self.next_char();
+                        self.next();
                         comma_wsp.extend(self.parse_whitespaces());
                     }
                 }
@@ -512,104 +523,120 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_number(&mut self) -> Result<SVGPathCSTNode, SyntaxError> {
-        let mut number = String::new();
-        let mut processed = String::new();
+        let start = self.index;
+        let mut number: Vec<u8> = Vec::new();
+        let mut processed: Vec<u8> = Vec::new();
+        let mut maybe_next = self.next();
         let mut has_dot = false;
         let mut has_e = false;
         let mut has_sign = false;
         let mut has_digit = false;
-        let start = self.index;
 
-        while let Some(next) = self.chars.peek() {
-            processed.push(*next);
+        while maybe_next.is_some() {
+            let next = maybe_next.unwrap();
+            processed.push(next);
             match next {
-                '0' => {
-                    if number == "0" {
+                b'0' => {
+                    if number == [b'0'] {
                         break;
                     }
                     has_digit = true;
-                    number.push(*next);
+                    number.push(next);
+                    maybe_next = self.next();
                 }
-                '1'..='9' => {
+                b'1'..=b'9' => {
                     has_digit = true;
-                    number.push(*next);
+                    number.push(next);
+                    maybe_next = self.next();
                 }
-                '.' => {
+                b'.' => {
                     if has_dot {
+                        self.index -= 1;
                         break;
                     }
-                    number.push(*next);
+                    number.push(next);
                     has_dot = true;
+                    maybe_next = self.next();
                 }
-                'e' | 'E' => {
+                b'e' | b'E' => {
                     if has_e {
+                        let number_length = number.clone().len();
+                        let number_as_string =
+                            unsafe { String::from_utf8_unchecked(number) };
                         return Err(SyntaxError::InvalidNumber {
-                            number: processed.clone(),
+                            number: number_as_string,
                             start,
-                            end: start + processed.clone().len(),
+                            end: start + number_length,
                         });
                     }
-                    number.push(*next);
+                    number.push(next);
                     has_e = true;
+                    maybe_next = self.next();
                 }
-                '+' | '-' => {
+                b'+' | b'-' => {
                     if has_sign || has_dot || has_digit && !has_e {
+                        self.index -= 1;
                         break;
                     }
-                    number.push(*next);
+                    number.push(next);
                     has_sign = true;
+                    maybe_next = self.next();
                 }
                 _ => {
-                    if !WSP_COMMA_CHARACTERS.contains(next)
-                        && !COMMAND_CHARACTERS.contains(next)
+                    if !WSP_COMMA_CHARACTERS.contains(&next)
+                        && !COMMAND_CHARACTERS.contains(&next)
                     {
                         return Err(SyntaxError::InvalidCharacter {
-                            character: *next,
-                            index: self.index,
+                            character: next as char,
+                            index: self.index - 1,
                             expected: "number or command".to_string(),
                         });
                     }
+                    self.index -= 1;
                     break;
                 }
             }
-            self.next_char();
         }
 
         if !has_digit {
+            let processed_length = processed.len();
+            let processed_as_string = unsafe { String::from_utf8_unchecked(processed) };
             return Err(SyntaxError::InvalidNumber {
-                number: processed.clone(),
+                number: processed_as_string,
                 start,
-                end: start + processed.clone().len(),
+                end: start + processed_length,
             });
         }
 
-        match number.parse::<f64>() {
+        let number_length = number.len();
+        let number_as_string = unsafe { String::from_utf8_unchecked(number) };
+        match number_as_string.parse::<f64>() {
             Ok(value) => Ok(SVGPathCSTNode::Number {
-                raw_number: number,
+                raw_number: number_as_string,
                 value,
                 start,
-                end: self.index,
+                end: start + number_length,
             }),
             Err(_) => Err(SyntaxError::InvalidNumber {
-                number: processed.clone(),
+                number: number_as_string,
                 start,
-                end: start + processed.clone().len(),
+                end: start + number_length,
             }),
         }
     }
 
     fn parse_sign(&mut self) -> Option<SVGPathCSTNode> {
-        if let Some(next) = self.chars.peek() {
+        if let Some(next) = self.peek() {
             match next {
-                '+' => {
-                    self.next_char();
+                b'+' => {
+                    self.next();
                     return Some(SVGPathCSTNode::Sign {
                         sign: &Sign::Plus,
                         start: self.index - 1,
                     });
                 }
-                '-' => {
-                    self.next_char();
+                b'-' => {
+                    self.next();
                     return Some(SVGPathCSTNode::Sign {
                         sign: &Sign::Minus,
                         start: self.index - 1,
@@ -621,14 +648,14 @@ impl<'a> Parser<'a> {
         None
     }
 
-    fn parse_flag(&mut self, command: char) -> Result<f64, SyntaxError> {
-        match self.next_char() {
-            Some('0') => Ok(0.0),
-            Some('1') => Ok(1.0),
+    fn parse_flag(&mut self, command: u8) -> Result<f64, SyntaxError> {
+        match self.next() {
+            Some(b'0') => Ok(0.0),
+            Some(b'1') => Ok(1.0),
             Some(character) => Err(SyntaxError::InvalidArcFlag {
                 index: self.index - 1,
-                character,
-                command,
+                character: character as char,
+                command: command as char,
             }),
             None => Err(SyntaxError::UnexpectedEnding {
                 index: self.index,
@@ -673,7 +700,7 @@ impl<'a> Parser<'a> {
     fn parse_coordinate_pair(
         &mut self,
     ) -> Result<(Vec<SVGPathCSTNode>, (f64, f64)), SyntaxError> {
-        let mut nodes = vec![];
+        let mut nodes = Vec::new();
 
         let (first_sign, first_number, first_value) = self.parse_coordinate()?;
         if let Some(sign) = first_sign {
@@ -707,8 +734,8 @@ impl<'a> Parser<'a> {
 
         let mut next_nodes = self.parse_whitespaces();
 
-        if let Some(mut next) = self.chars.peek() {
-            while !COMMAND_CHARACTERS.contains(next) {
+        if let Some(mut next) = self.peek() {
+            while !COMMAND_CHARACTERS.contains(&next) {
                 let mut segment = new_segment(command, self.index, true);
                 let (coord_nodes, coord_values) = self.parse_coordinate_pair()?;
                 first_segment.chain_end = self.index;
@@ -722,7 +749,7 @@ impl<'a> Parser<'a> {
                     Ok(comma_wsp) => next_nodes.extend(comma_wsp),
                     Err(_) => break,
                 }
-                if let Some(next_) = self.chars.peek() {
+                if let Some(next_) = self.peek() {
                     next = next_;
                 } else {
                     break;
@@ -731,7 +758,7 @@ impl<'a> Parser<'a> {
         }
 
         let (start, end) = (first_segment.chain_start, first_segment.chain_end);
-        let mut cst = vec![SVGPathCSTNode::Segment(first_segment)];
+        let mut cst = Vec::from([SVGPathCSTNode::Segment(first_segment)]);
         set_commands_chain_info!(cst, next_nodes, start, end);
         Ok(cst)
     }
@@ -757,8 +784,8 @@ impl<'a> Parser<'a> {
 
         let mut next_nodes = self.parse_whitespaces();
 
-        if let Some(mut next) = self.chars.peek() {
-            while !COMMAND_CHARACTERS.contains(next) {
+        if let Some(mut next) = self.peek() {
+            while !COMMAND_CHARACTERS.contains(&next) {
                 let mut segment = new_segment(command, self.index, true);
                 let (coord_nodes_1, coord_values_1) = self.parse_coordinate_pair()?;
                 segment.cst.extend(coord_nodes_1);
@@ -775,7 +802,7 @@ impl<'a> Parser<'a> {
                 first_segment.chain_end = self.index;
                 segment.end = self.index;
                 next_nodes.push(SVGPathCSTNode::Segment(segment));
-                if let Some(next_) = self.chars.peek() {
+                if let Some(next_) = self.peek() {
                     next = next_;
                 } else {
                     break;
@@ -784,7 +811,7 @@ impl<'a> Parser<'a> {
         }
 
         let (start, end) = (first_segment.chain_start, first_segment.chain_end);
-        let mut cst = vec![SVGPathCSTNode::Segment(first_segment)];
+        let mut cst = Vec::from([SVGPathCSTNode::Segment(first_segment)]);
         set_commands_chain_info!(cst, next_nodes, start, end);
         Ok(cst)
     }
@@ -810,8 +837,8 @@ impl<'a> Parser<'a> {
 
         let mut next_nodes = self.parse_whitespaces();
 
-        if let Some(mut next) = self.chars.peek() {
-            while !COMMAND_CHARACTERS.contains(next) {
+        if let Some(mut next) = self.peek() {
+            while !COMMAND_CHARACTERS.contains(&next) {
                 let mut segment = new_segment(command, self.index, true);
                 let (coord_nodes_1, coord_values_1) = self.parse_coordinate_pair()?;
                 segment.cst.extend(coord_nodes_1);
@@ -836,7 +863,7 @@ impl<'a> Parser<'a> {
                 segment.end = self.index;
                 next_nodes.push(SVGPathCSTNode::Segment(segment));
                 next_nodes.extend(self.parse_whitespaces());
-                if let Some(next_) = self.chars.peek() {
+                if let Some(next_) = self.peek() {
                     next = next_;
                 } else {
                     break;
@@ -845,7 +872,7 @@ impl<'a> Parser<'a> {
         }
 
         let (start, end) = (first_segment.chain_start, first_segment.chain_end);
-        let mut cst = vec![SVGPathCSTNode::Segment(first_segment)];
+        let mut cst = Vec::from([SVGPathCSTNode::Segment(first_segment)]);
         set_commands_chain_info!(cst, next_nodes, start, end);
         Ok(cst)
     }
@@ -854,7 +881,7 @@ impl<'a> Parser<'a> {
         &mut self,
         command: &'static SVGPathCommand,
     ) -> Result<Vec<SVGPathCSTNode>, SyntaxError> {
-        let command_as_char = command.to_char();
+        let u8_command = command.to_u8();
         let mut first_segment = new_segment(command, self.index - 1, false);
         first_segment.cst.push(SVGPathCSTNode::Command(command));
         first_segment.cst.extend(self.parse_whitespaces());
@@ -868,7 +895,7 @@ impl<'a> Parser<'a> {
                     start: index_before_parse_radius,
                     end: self.index,
                     value,
-                    command: command_as_char,
+                    command: u8_command as char,
                 });
             }
             first_segment.args.push(value);
@@ -877,7 +904,7 @@ impl<'a> Parser<'a> {
         }
 
         for _ in 0..2 {
-            let value = self.parse_flag(command_as_char)?;
+            let value = self.parse_flag(u8_command)?;
             first_segment.args.push(value);
             first_segment.cst.push(SVGPathCSTNode::Number {
                 raw_number: if value == 0.0 {
@@ -902,8 +929,8 @@ impl<'a> Parser<'a> {
 
         let mut next_nodes = self.parse_whitespaces();
 
-        if let Some(mut next) = self.chars.peek() {
-            while !COMMAND_CHARACTERS.contains(next) {
+        if let Some(mut next) = self.peek() {
+            while !COMMAND_CHARACTERS.contains(&next) {
                 let mut segment = new_segment(command, self.index, true);
 
                 for _ in 0..3 {
@@ -917,7 +944,7 @@ impl<'a> Parser<'a> {
                             start: index_before_parse_radius,
                             end: self.index,
                             value,
-                            command: command_as_char,
+                            command: u8_command as char,
                         });
                     }
 
@@ -929,7 +956,7 @@ impl<'a> Parser<'a> {
                 for _ in 0..2 {
                     next_nodes.extend(self.parse_whitespaces());
 
-                    let value = self.parse_flag(command_as_char)?;
+                    let value = self.parse_flag(u8_command)?;
                     segment.args.push(value);
                     segment.cst.push(SVGPathCSTNode::Number {
                         raw_number: if value == 0.0 {
@@ -953,7 +980,7 @@ impl<'a> Parser<'a> {
                 first_segment.chain_end = self.index;
                 segment.end = self.index;
                 next_nodes.push(SVGPathCSTNode::Segment(segment));
-                if let Some(next_) = self.chars.peek() {
+                if let Some(next_) = self.peek() {
                     next = next_;
                 } else {
                     break;
@@ -962,7 +989,7 @@ impl<'a> Parser<'a> {
         }
 
         let (start, end) = (first_segment.chain_start, first_segment.chain_end);
-        let mut cst = vec![SVGPathCSTNode::Segment(first_segment)];
+        let mut cst = Vec::from([SVGPathCSTNode::Segment(first_segment)]);
         set_commands_chain_info!(cst, next_nodes, start, end);
         Ok(cst)
     }
@@ -975,7 +1002,7 @@ impl<'a> Parser<'a> {
         segment.end = self.index;
         segment.chain_end = self.index;
         segment.cst.push(SVGPathCSTNode::Command(command));
-        vec![SVGPathCSTNode::Segment(segment)]
+        Vec::from([SVGPathCSTNode::Segment(segment)])
     }
 
     fn parse_horizontal_or_vertical(
@@ -997,8 +1024,8 @@ impl<'a> Parser<'a> {
 
         let mut next_nodes = self.parse_whitespaces();
 
-        if let Some(mut next) = self.chars.peek() {
-            while !COMMAND_CHARACTERS.contains(next) {
+        if let Some(mut next) = self.peek() {
+            while !COMMAND_CHARACTERS.contains(&next) {
                 let mut segment = new_segment(command, self.index, true);
                 let (sign, number, value) = self.parse_coordinate()?;
                 segment.end = self.index;
@@ -1014,7 +1041,7 @@ impl<'a> Parser<'a> {
                     Ok(comma_wsp) => next_nodes.extend(comma_wsp),
                     Err(_) => break,
                 }
-                if let Some(next_) = self.chars.peek() {
+                if let Some(next_) = self.peek() {
                     next = next_;
                 } else {
                     break;
@@ -1023,46 +1050,46 @@ impl<'a> Parser<'a> {
         }
 
         let (start, end) = (first_segment.chain_start, first_segment.chain_end);
-        let mut cst = vec![SVGPathCSTNode::Segment(first_segment)];
+        let mut cst = Vec::from([SVGPathCSTNode::Segment(first_segment)]);
         set_commands_chain_info!(cst, next_nodes, start, end);
         Ok(cst)
     }
 
     fn parse_drawto(
         &mut self,
-        command: char,
+        command: u8,
     ) -> Result<Vec<SVGPathCSTNode>, SyntaxError> {
         match command {
-            'm' => self.parse_two_operands_command(&SVGPathCommand::MovetoLower),
-            'M' => self.parse_two_operands_command(&SVGPathCommand::MovetoUpper),
-            'l' => self.parse_two_operands_command(&SVGPathCommand::LinetoLower),
-            'L' => self.parse_two_operands_command(&SVGPathCommand::LinetoUpper),
-            'h' => self.parse_horizontal_or_vertical(&SVGPathCommand::HorizontalLower),
-            'H' => self.parse_horizontal_or_vertical(&SVGPathCommand::HorizontalUpper),
-            'v' => self.parse_horizontal_or_vertical(&SVGPathCommand::VerticalLower),
-            'V' => self.parse_horizontal_or_vertical(&SVGPathCommand::VerticalUpper),
-            'z' => Ok(self.parse_closepath(&SVGPathCommand::ClosepathLower)),
-            'Z' => Ok(self.parse_closepath(&SVGPathCommand::ClosepathUpper)),
-            'c' => self.parse_curveto(&SVGPathCommand::CurvetoLower),
-            'C' => self.parse_curveto(&SVGPathCommand::CurvetoUpper),
-            'q' => self.parse_four_operands_command(&SVGPathCommand::QuadraticLower),
-            'Q' => self.parse_four_operands_command(&SVGPathCommand::QuadraticUpper),
-            's' => {
+            b'm' => self.parse_two_operands_command(&SVGPathCommand::MovetoLower),
+            b'M' => self.parse_two_operands_command(&SVGPathCommand::MovetoUpper),
+            b'l' => self.parse_two_operands_command(&SVGPathCommand::LinetoLower),
+            b'L' => self.parse_two_operands_command(&SVGPathCommand::LinetoUpper),
+            b'h' => self.parse_horizontal_or_vertical(&SVGPathCommand::HorizontalLower),
+            b'H' => self.parse_horizontal_or_vertical(&SVGPathCommand::HorizontalUpper),
+            b'v' => self.parse_horizontal_or_vertical(&SVGPathCommand::VerticalLower),
+            b'V' => self.parse_horizontal_or_vertical(&SVGPathCommand::VerticalUpper),
+            b'z' => Ok(self.parse_closepath(&SVGPathCommand::ClosepathLower)),
+            b'Z' => Ok(self.parse_closepath(&SVGPathCommand::ClosepathUpper)),
+            b'c' => self.parse_curveto(&SVGPathCommand::CurvetoLower),
+            b'C' => self.parse_curveto(&SVGPathCommand::CurvetoUpper),
+            b'q' => self.parse_four_operands_command(&SVGPathCommand::QuadraticLower),
+            b'Q' => self.parse_four_operands_command(&SVGPathCommand::QuadraticUpper),
+            b's' => {
                 self.parse_four_operands_command(&SVGPathCommand::SmoothCurvetoLower)
             }
-            'S' => {
+            b'S' => {
                 self.parse_four_operands_command(&SVGPathCommand::SmoothCurvetoUpper)
             }
-            'a' => self.parse_arc(&SVGPathCommand::ArcLower),
-            'A' => self.parse_arc(&SVGPathCommand::ArcUpper),
-            't' => {
+            b'a' => self.parse_arc(&SVGPathCommand::ArcLower),
+            b'A' => self.parse_arc(&SVGPathCommand::ArcUpper),
+            b't' => {
                 self.parse_two_operands_command(&SVGPathCommand::SmoothQuadraticLower)
             }
-            'T' => {
+            b'T' => {
                 self.parse_two_operands_command(&SVGPathCommand::SmoothQuadraticUpper)
             }
             _ => Err(SyntaxError::InvalidCharacter {
-                character: command,
+                character: command as char,
                 index: self.index - 1,
                 expected: "command".to_string(),
             }),
@@ -1071,30 +1098,33 @@ impl<'a> Parser<'a> {
 
     pub fn parse(&mut self) -> Result<Vec<SVGPathCSTNode>, SyntaxError> {
         if self.path.is_empty() {
-            return Ok(vec![]);
+            return Ok(Vec::new());
         }
-        if self.path == "none" {
-            return Ok(vec![SVGPathCSTNode::None]);
+        if self.path == b"none" {
+            return Ok(Vec::from([SVGPathCSTNode::None]));
         }
 
         let mut cst = self.parse_whitespaces();
-        if self.chars.peek().is_some() {
-            let next = self.next_char().unwrap();
-            if next == 'M' || next == 'm' {
-                cst.extend(self.parse_two_operands_command(match next {
-                    'M' => &SVGPathCommand::MovetoUpper,
-                    _ => &SVGPathCommand::MovetoLower,
-                })?);
-                cst.extend(self.parse_whitespaces());
-                while let Some(next) = self.next_char() {
-                    cst.extend(self.parse_drawto(next)?);
+        if self.peek().is_some() {
+            let next = self.next().unwrap();
+            match next {
+                b'm' | b'M' => {
+                    cst.extend(self.parse_two_operands_command(match next {
+                        b'm' => &SVGPathCommand::MovetoLower,
+                        _ => &SVGPathCommand::MovetoUpper,
+                    })?);
                     cst.extend(self.parse_whitespaces());
+                    while let Some(next) = self.next() {
+                        cst.extend(self.parse_drawto(next)?);
+                        cst.extend(self.parse_whitespaces());
+                    }
                 }
-            } else {
-                return Err(SyntaxError::ExpectedMovetoCommand {
-                    command: next,
-                    index: self.index - 1,
-                });
+                _ => {
+                    return Err(SyntaxError::ExpectedMovetoCommand {
+                        command: next as char,
+                        index: self.index - 1,
+                    });
+                }
             }
         }
 
@@ -1111,7 +1141,7 @@ impl<'a> Parser<'a> {
 /// ```
 /// use svg_path_cst::{svg_path_cst, SyntaxError as SVGPathSyntaxError};
 ///
-/// let cst = svg_path_cst("M10 10!");
+/// let cst = svg_path_cst(b"M10 10!");
 /// assert_eq!(
 ///     cst,
 ///     Err(SVGPathSyntaxError::InvalidCharacter {
@@ -1126,7 +1156,7 @@ impl<'a> Parser<'a> {
 ///     "Invalid character '!' at index 6, expected number or command"
 /// );
 /// ```
-pub fn svg_path_cst(path: &str) -> Result<Vec<SVGPathCSTNode>, SyntaxError> {
+pub fn svg_path_cst(path: &[u8]) -> Result<Vec<SVGPathCSTNode>, SyntaxError> {
     let mut parser = Parser::new(path);
     parser.parse()
 }

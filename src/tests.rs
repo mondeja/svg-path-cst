@@ -1,3 +1,6 @@
+extern crate alloc;
+use crate::alloc::{format, string::ToString, vec, vec::Vec};
+
 use crate::errors::SyntaxError;
 use crate::{svg_path_cst, SVGPathCSTNode, SVGPathCommand, SVGPathSegment, Sign, WSP};
 
@@ -23,23 +26,23 @@ macro_rules! assert_svg_path_cst_err {
 
 #[test]
 fn test_empty() {
-    assert_svg_path_cst!("", vec![]);
+    assert_svg_path_cst!(b"", Vec::with_capacity(0));
 }
 
 #[test]
 fn test_none() {
-    assert_svg_path_cst!("none", vec![SVGPathCSTNode::None]);
+    assert_svg_path_cst!(b"none", vec![SVGPathCSTNode::None]);
 }
 
 #[test]
 fn test_none_fmt() {
-    assert_svg_path_cst_fmt!("none", "[None]");
+    assert_svg_path_cst_fmt!(b"none", "[None]");
 }
 
 #[test]
 fn test_whitespaces() {
     assert_svg_path_cst!(
-        " \t\n\r \x0C",
+        b" \t\n\r \x0C",
         vec![
             SVGPathCSTNode::Whitespace {
                 wsp: &WSP::Space,
@@ -78,7 +81,7 @@ fn test_whitespaces() {
 #[test]
 fn test_whitespaces_fmt() {
     assert_svg_path_cst_fmt!(
-        " \t\n\r \x0C",
+        b" \t\n\r \x0C",
         concat!(
             "[Whitespace { wsp: Space, start: 0, end: 1 },",
             " Whitespace { wsp: Tab, start: 1, end: 2 },",
@@ -95,7 +98,7 @@ fn invalid_character() {
     let expected = "number or command".to_string();
 
     assert_svg_path_cst_err!(
-        "m0 0 !l10 10",
+        b"m0 0 !l10 10",
         SyntaxError::InvalidCharacter {
             character: '!',
             index: 5,
@@ -104,7 +107,7 @@ fn invalid_character() {
     );
 
     assert_svg_path_cst_err!(
-        "m0 0 l!10 10",
+        b"m0 0 l!10 10",
         SyntaxError::InvalidCharacter {
             character: '!',
             index: 6,
@@ -113,7 +116,7 @@ fn invalid_character() {
     );
 
     assert_svg_path_cst_err!(
-        "m0 ! 0",
+        b"m0 ! 0",
         SyntaxError::InvalidCharacter {
             character: '!',
             index: 3,
@@ -122,7 +125,7 @@ fn invalid_character() {
     );
 
     assert_svg_path_cst_err!(
-        "m0 \t\n 0!",
+        b"m0 \t\n 0!",
         SyntaxError::InvalidCharacter {
             character: '!',
             index: 7,
@@ -134,7 +137,7 @@ fn invalid_character() {
 #[test]
 fn invalid_moveto_at_start() {
     assert_svg_path_cst_err!(
-        "A 10 10",
+        b"A 10 10",
         SyntaxError::ExpectedMovetoCommand {
             command: 'A',
             index: 0,
@@ -145,7 +148,7 @@ fn invalid_moveto_at_start() {
 #[test]
 fn invalid_moveto_after_wsp() {
     assert_svg_path_cst_err!(
-        " \t\n\r \x0C A 10 10",
+        b" \t\n\r \x0C A 10 10",
         SyntaxError::ExpectedMovetoCommand {
             command: 'A',
             index: 7,
@@ -156,7 +159,7 @@ fn invalid_moveto_after_wsp() {
 #[test]
 fn invalid_end_in_moveto() {
     assert_svg_path_cst_err!(
-        "m 10",
+        b"m 10",
         SyntaxError::UnexpectedEnding {
             index: 3,
             expected: "comma or whitespace".to_string(),
@@ -167,7 +170,7 @@ fn invalid_end_in_moveto() {
 #[test]
 fn invalid_moveto_args() {
     assert_svg_path_cst_err!(
-        "m 1 2 3",
+        b"m 1 2 3",
         SyntaxError::UnexpectedEnding {
             index: 6,
             expected: "comma or whitespace".to_string(),
@@ -177,7 +180,7 @@ fn invalid_moveto_args() {
 
 #[test]
 fn basic_moveto() {
-    let cst = svg_path_cst("m 10-10");
+    let cst = svg_path_cst(b"m 10-10");
     assert_eq!(
         cst,
         Ok(vec![SVGPathCSTNode::Segment(SVGPathSegment {
@@ -219,7 +222,7 @@ fn basic_moveto() {
 #[test]
 fn basic_moveto_fmt() {
     assert_svg_path_cst_fmt!(
-        "m 10-10",
+        b"m 10-10",
         concat!(
             "[Segment(SVGPathSegment {",
             " command: MovetoLower, args: [10.0, -10.0],",
@@ -240,7 +243,7 @@ fn basic_moveto_fmt() {
 #[test]
 fn moveto_whitespaces() {
     assert_svg_path_cst!(
-        " M \t10\r 10 ",
+        b" M \t10\r 10 ",
         vec![
             SVGPathCSTNode::Whitespace {
                 wsp: &WSP::Space,
@@ -303,7 +306,7 @@ fn moveto_whitespaces() {
 #[test]
 fn chained_moveto() {
     assert_svg_path_cst!(
-        "M 10 10 20 20",
+        b"M 10 10 20 20",
         vec![
             SVGPathCSTNode::Segment(SVGPathSegment {
                 command: &SVGPathCommand::MovetoUpper,
@@ -379,7 +382,7 @@ fn chained_moveto() {
 #[test]
 fn moveto_and_moveto_drawto() {
     assert_svg_path_cst!(
-        "M10 10 M5 -4.6",
+        b"M10 10 M5 -4.6",
         vec![
             SVGPathCSTNode::Segment(SVGPathSegment {
                 command: &SVGPathCommand::MovetoUpper,
@@ -455,7 +458,7 @@ fn moveto_and_moveto_drawto() {
 #[test]
 fn horizontal_and_vertical() {
     assert_svg_path_cst!(
-        "m1 2h6v-3 5",
+        b"m1 2h6v-3 5",
         vec![
             SVGPathCSTNode::Segment(SVGPathSegment {
                 command: &SVGPathCommand::MovetoLower,
@@ -553,7 +556,7 @@ fn horizontal_and_vertical() {
 #[test]
 fn moveto_curveto() {
     assert_svg_path_cst!(
-        "m0 0c100,100 250,100 250,200 200,200 500,200 500,400",
+        b"m0 0c100,100 250,100 250,200 200,200 500,200 500,400",
         vec![
             SVGPathCSTNode::Segment(SVGPathSegment {
                 command: &SVGPathCommand::MovetoLower,
@@ -717,7 +720,7 @@ fn moveto_curveto() {
 #[test]
 fn moveto_smooth_curveto() {
     assert_svg_path_cst!(
-        "m0 0s100,100 250,200 150 150 300 300",
+        b"m0 0s100,100 250,200 150 150 300 300",
         vec![
             SVGPathCSTNode::Segment(SVGPathSegment {
                 command: &SVGPathCommand::MovetoLower,
@@ -853,7 +856,7 @@ fn moveto_smooth_curveto() {
 #[test]
 fn moveto_arc() {
     assert_svg_path_cst!(
-        "m0 0a100,100 0 0 1 250,200 150 150 0 0 0 300 300",
+        b"m0 0a100,100 0 0 1 250,200 150 150 0 0 0 300 300",
         vec![
             SVGPathCSTNode::Segment(SVGPathSegment {
                 command: &SVGPathCommand::MovetoLower,
@@ -1055,7 +1058,7 @@ fn moveto_arc() {
 #[test]
 fn invalid_arc_flag() {
     assert_svg_path_cst_err!(
-        "m0 0a100,100 0 2 1 250,200",
+        b"m0 0a100,100 0 2 1 250,200",
         SyntaxError::InvalidArcFlag {
             index: 15,
             character: '2',
@@ -1067,7 +1070,7 @@ fn invalid_arc_flag() {
 #[test]
 fn moveto_quadratic() {
     assert_svg_path_cst!(
-        "m0 0q100,100 250,200 150 150 300 300",
+        b"m0 0q100,100 250,200 150 150 300 300",
         vec![
             SVGPathCSTNode::Segment(SVGPathSegment {
                 command: &SVGPathCommand::MovetoLower,
@@ -1203,7 +1206,7 @@ fn moveto_quadratic() {
 #[test]
 fn moveto_smooth_quadratic() {
     assert_svg_path_cst!(
-        "m0 0t100,100 250,200",
+        b"m0 0t100,100 250,200",
         vec![
             SVGPathCSTNode::Segment(SVGPathSegment {
                 command: &SVGPathCommand::MovetoLower,
@@ -1295,7 +1298,7 @@ fn moveto_smooth_quadratic() {
 #[test]
 fn invalid_multiple_commas() {
     assert_svg_path_cst_err!(
-        "m0 0,,100,100",
+        b"m0 0,,100,100",
         SyntaxError::InvalidNumber {
             number: ",".to_string(),
             start: 4,
@@ -1307,7 +1310,7 @@ fn invalid_multiple_commas() {
 #[test]
 fn arc_with_flags_together() {
     assert_svg_path_cst!(
-        "m0 0a1.862 1.862 0 00-.248.033",
+        b"m0 0a1.862 1.862 0 00-.248.033",
         vec![
             SVGPathCSTNode::Segment(SVGPathSegment {
                 command: &SVGPathCommand::MovetoLower,
@@ -1416,8 +1419,20 @@ fn arc_with_flags_together() {
 }
 
 #[test]
+fn invalid_utf8_length_1() {
+    assert_svg_path_cst_err!(
+        b"m0 0\xE1", // \xE1 is á
+        SyntaxError::InvalidCharacter {
+            character: 'á',
+            index: 4,
+            expected: "number or command".to_string()
+        }
+    );
+}
+
+#[test]
 fn simple_icons_icon_path() {
-    let cst = svg_path_cst("M12 0C8.688 0 6 2.688 6 6s2.688 6 6 6c1.066 0 2.1171.2862 3.0371.8262 2.858 1.678 3.8167 5.3539 2.1387 8.2129h1.6797a7.4925 7.4925 0 0 0 .6425-3.0293c.003-4.144-3.356-7.5048-7.498-7.5098-2.484 0-4.5-2.016-4.5-4.5S9.516 1.5 12 1.5s4.5 2.016 4.5 4.5H18c0-3.312-2.688-6-6-6zm0 3c-1.597.04-2.8799 1.3259-2.9219 2.9219C9.0351 7.5799 10.343 8.957 12 9c1.597-.04 2.8799-1.3259 2.9219-2.9219C14.9649 4.4201 13.656 3.043 12 3zm0 1.5c.828 0 1.5.672 1.5 1.5v.002c0 .828-.672 1.5-1.5 1.5-.83 0-1.5-.673-1.5-1.502 0-.83.67-1.5 1.5-1.5zM7.5 15v1.5H9v6H4.5V24h15v-1.5H15v-6h1.5V15h-9zm3 1.5h3v6h-3v-6zm-6 1.4707V18a7.418 7.418 0 0 0 .6445 3.039h1.6836C6.3001 20.147 6 19.11 6 18v-.0293H4.5Z");
+    let cst = svg_path_cst(b"M12 0C8.688 0 6 2.688 6 6s2.688 6 6 6c1.066 0 2.1171.2862 3.0371.8262 2.858 1.678 3.8167 5.3539 2.1387 8.2129h1.6797a7.4925 7.4925 0 0 0 .6425-3.0293c.003-4.144-3.356-7.5048-7.498-7.5098-2.484 0-4.5-2.016-4.5-4.5S9.516 1.5 12 1.5s4.5 2.016 4.5 4.5H18c0-3.312-2.688-6-6-6zm0 3c-1.597.04-2.8799 1.3259-2.9219 2.9219C9.0351 7.5799 10.343 8.957 12 9c1.597-.04 2.8799-1.3259 2.9219-2.9219C14.9649 4.4201 13.656 3.043 12 3zm0 1.5c.828 0 1.5.672 1.5 1.5v.002c0 .828-.672 1.5-1.5 1.5-.83 0-1.5-.673-1.5-1.502 0-.83.67-1.5 1.5-1.5zM7.5 15v1.5H9v6H4.5V24h15v-1.5H15v-6h1.5V15h-9zm3 1.5h3v6h-3v-6zm-6 1.4707V18a7.418 7.418 0 0 0 .6445 3.039h1.6836C6.3001 20.147 6 19.11 6 18v-.0293H4.5Z");
     assert!(cst.is_ok());
     assert_eq!(cst.unwrap().len(), 57);
 }
