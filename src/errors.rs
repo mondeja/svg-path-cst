@@ -1,3 +1,4 @@
+use crate::alloc::string::String;
 use snafu::prelude::*;
 
 /// Syntax errors that can occur when parsing an SVG path
