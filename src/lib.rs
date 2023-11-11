@@ -227,10 +227,10 @@ impl WSP {
 ///     svg_path_cst, SVGPathCSTNode, SVGPathCommand, SVGPathSegment, Sign,
 /// };
 ///
-/// let cst = svg_path_cst(b"M+10-10");
+/// let cst = svg_path_cst(b"M+10-10").unwrap();
 /// assert_eq!(
 ///     cst,
-///     Ok(vec![
+///     vec![
 ///         SVGPathCSTNode::Segment(SVGPathSegment {
 ///             command: &SVGPathCommand::MovetoUpper,
 ///             args: vec![10.0, -10.0],
@@ -263,17 +263,26 @@ impl WSP {
 ///             chain_start: 0,
 ///             chain_end: 7,
 ///         }),
-///     ])
+///     ]
 /// );
 ///
-/// for node in cst.unwrap() {
+/// for node in &cst {
 ///     match node {
 ///         SVGPathCSTNode::Sign{sign, ..} => {
 ///             match sign {
 ///                Sign::Plus => println!("+"),
 ///                Sign::Minus => println!("-"),
 ///             }
-///             // or just println!("{}", sign.to_u8() as char);`
+///         }
+///         _ => (),
+///     }
+/// }
+///
+/// // or just use `to_u8() as char`
+/// for node in &cst {
+///     match node {
+///         SVGPathCSTNode::Sign{sign, ..} => {
+///             println!("{}", sign.to_u8() as char);
 ///         }
 ///         _ => (),
 ///     }
