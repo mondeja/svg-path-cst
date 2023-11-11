@@ -95,4 +95,4 @@ assert_eq!(cst, Ok(expected_cst));
 
 ## Compatibility
 
-This crate is compatible with SVG v1.1 paths, as defined in the [W3C SVG 1.1](https://www.w3.org/TR/SVG11/paths.html) and `no_std` environments.
+This crate is compatible with SVG v1.1 paths, as defined in the [W3C SVG 1.1](https://www.w3.org/TR/SVG11/paths.html#PathData) and `no_std` environments.
