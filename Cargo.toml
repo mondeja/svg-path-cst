@@ -1,6 +1,6 @@
 [package]
 name = "svg-path-cst"
-version = "0.0.7"
+version = "0.1.0"
 edition = "2021"
 readme = "README.md"
 description = "CST SVG path parser."
@@ -13,7 +13,7 @@ name = "svg_path_cst"
 path = "src/lib.rs"
 
 [dependencies]
-snafu = {version = "0.7.5", default_features = false}
+snafu = {version = "0.8.0", default_features = false}
 
 [dev-dependencies]
 doc-comment = "0.3.3"

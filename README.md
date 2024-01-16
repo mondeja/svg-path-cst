@@ -2,7 +2,7 @@
 
 [![Crates.io](https://img.shields.io/crates/v/svg-path-cst)](https://crates.io/crates/svg-path-cst)
 ![Tests](https://img.shields.io/github/actions/workflow/status/mondeja/svg-path-cst/ci.yml?label=tests)
-[![License](https://img.shields.io/crates/l/svg-path-cst)](https://github.com/mondeja/svg-path-cst/blob/master/LICENSE.md)
+[![License](https://img.shields.io/crates/l/svg-path-cst?logo=mit)](https://github.com/mondeja/svg-path-cst/blob/master/LICENSE.md)
 
 Concrete Syntax Tree parser for SVG v1.1 paths.
 
@@ -95,4 +95,4 @@ assert_eq!(cst, Ok(expected_cst));
 
 ## Compatibility
 
-This crate is compatible with SVG v1.1 paths, as defined in the [W3C SVG 1.1](https://www.w3.org/TR/SVG11/paths.html#PathData) and `no_std` environments.
+This crate is compatible with SVG v1.1 paths, as defined in the [W3C SVG 1.1](https://www.w3.org/TR/SVG11/paths.html#PathData) and [`no_std` environments](https://docs.rust-embedded.org/book/intro/no-std.html).
