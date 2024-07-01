@@ -1173,8 +1173,6 @@ impl<'a> Parser<'a> {
             let next = self.next().unwrap();
             match next {
                 b'm' | b'M' => {
-                    #[cfg(feature = "tracing")]
-                    tracing::trace!("Parsing moveto command '{}'", next as char);
                     cst.extend(self.parse_two_operands_command(match next {
                         b'm' => &SVGPathCommand::MovetoLower,
                         _ => &SVGPathCommand::MovetoUpper,
