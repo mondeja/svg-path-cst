@@ -454,6 +454,7 @@ impl<'a> Parser<'a> {
         Ok(())
     }
 
+    #[cfg_attr(feature = "tracing", tracing::instrument(level = "trace", skip(self)))]
     fn parse_whitespaces(&mut self) -> Vec<SVGPathCSTNode> {
         let mut whitespaces = Vec::new();
         while let Some(next) = self.peek() {
@@ -504,6 +505,10 @@ impl<'a> Parser<'a> {
         whitespaces
     }
 
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(level = "trace", skip(self), err(Debug))
+    )]
     fn parse_comma_wsp(&mut self) -> Result<Vec<SVGPathCSTNode>, SyntaxError> {
         let mut comma_wsp = Vec::new();
         if let Some(next) = self.peek() {
@@ -531,6 +536,10 @@ impl<'a> Parser<'a> {
         Ok(comma_wsp)
     }
 
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(level = "trace", skip(self), err(Debug))
+    )]
     fn parse_number(&mut self) -> Result<SVGPathCSTNode, SyntaxError> {
         let start = self.index;
         let mut number: Vec<u8> = Vec::new();
@@ -634,6 +643,7 @@ impl<'a> Parser<'a> {
         }
     }
 
+    #[cfg_attr(feature = "tracing", tracing::instrument(level = "trace", skip(self)))]
     fn parse_sign(&mut self) -> Option<SVGPathCSTNode> {
         if let Some(next) = self.peek() {
             match next {
@@ -657,6 +667,10 @@ impl<'a> Parser<'a> {
         None
     }
 
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(level = "trace", skip(self), err(Debug))
+    )]
     fn parse_flag(&mut self, command: u8) -> Result<f64, SyntaxError> {
         match self.next() {
             Some(b'0') => Ok(0.0),
@@ -673,6 +687,10 @@ impl<'a> Parser<'a> {
         }
     }
 
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(level = "trace", skip(self), err(Debug))
+    )]
     fn parse_coordinate(&mut self) -> Result<Coordinate, SyntaxError> {
         let sign_node = self.parse_sign();
         let SVGPathCSTNode::Number {
@@ -706,6 +724,10 @@ impl<'a> Parser<'a> {
         ))
     }
 
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(level = "trace", skip(self), err(Debug))
+    )]
     fn parse_coordinate_pair(
         &mut self,
     ) -> Result<(Vec<SVGPathCSTNode>, (f64, f64)), SyntaxError> {
@@ -726,6 +748,10 @@ impl<'a> Parser<'a> {
         Ok((nodes, (first_value, second_value)))
     }
 
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(level = "trace", skip(self), err(Debug))
+    )]
     fn parse_two_operands_command(
         &mut self,
         command: &'static SVGPathCommand,
@@ -772,6 +798,10 @@ impl<'a> Parser<'a> {
         Ok(cst)
     }
 
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(level = "trace", skip(self), err(Debug))
+    )]
     fn parse_four_operands_command(
         &mut self,
         command: &'static SVGPathCommand,
@@ -825,6 +855,10 @@ impl<'a> Parser<'a> {
         Ok(cst)
     }
 
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(level = "trace", skip(self), err(Debug))
+    )]
     fn parse_curveto(
         &mut self,
         command: &'static SVGPathCommand,
@@ -886,6 +920,10 @@ impl<'a> Parser<'a> {
         Ok(cst)
     }
 
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(level = "trace", skip(self), err(Debug))
+    )]
     fn parse_arc(
         &mut self,
         command: &'static SVGPathCommand,
@@ -1003,6 +1041,7 @@ impl<'a> Parser<'a> {
         Ok(cst)
     }
 
+    #[cfg_attr(feature = "tracing", tracing::instrument(level = "trace", skip(self)))]
     fn parse_closepath(
         &mut self,
         command: &'static SVGPathCommand,
@@ -1014,6 +1053,10 @@ impl<'a> Parser<'a> {
         Vec::from([SVGPathCSTNode::Segment(segment)])
     }
 
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(level = "trace", skip(self), err(Debug))
+    )]
     fn parse_horizontal_or_vertical(
         &mut self,
         command: &'static SVGPathCommand,
@@ -1064,6 +1107,10 @@ impl<'a> Parser<'a> {
         Ok(cst)
     }
 
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(level = "trace", skip(self), err(Debug))
+    )]
     fn parse_drawto(
         &mut self,
         command: u8,
@@ -1105,11 +1152,19 @@ impl<'a> Parser<'a> {
         }
     }
 
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(level = "trace", skip(self), err(Debug))
+    )]
     pub fn parse(&mut self) -> Result<Vec<SVGPathCSTNode>, SyntaxError> {
         if self.path.is_empty() {
+            #[cfg(feature = "tracing")]
+            tracing::trace!("Empty SVG path");
             return Ok(Vec::new());
         }
         if self.path == b"none" {
+            #[cfg(feature = "tracing")]
+            tracing::trace!("SVG path with 'none' value");
             return Ok(Vec::from([SVGPathCSTNode::None]));
         }
 
@@ -1118,6 +1173,8 @@ impl<'a> Parser<'a> {
             let next = self.next().unwrap();
             match next {
                 b'm' | b'M' => {
+                    #[cfg(feature = "tracing")]
+                    tracing::trace!("Parsing moveto command '{}'", next as char);
                     cst.extend(self.parse_two_operands_command(match next {
                         b'm' => &SVGPathCommand::MovetoLower,
                         _ => &SVGPathCommand::MovetoUpper,
@@ -1129,6 +1186,11 @@ impl<'a> Parser<'a> {
                     }
                 }
                 _ => {
+                    #[cfg(feature = "tracing")]
+                    tracing::trace!(
+                        "Expected moveto command, found '{}'",
+                        next as char
+                    );
                     return Err(SyntaxError::ExpectedMovetoCommand {
                         command: next as char,
                         index: self.index - 1,
@@ -1165,7 +1227,10 @@ impl<'a> Parser<'a> {
 ///     "Invalid character '!' at index 6, expected number or command"
 /// );
 /// ```
+#[cfg_attr(feature = "tracing", tracing::instrument(level = "trace", skip_all))]
 pub fn svg_path_cst(path: &[u8]) -> Result<Vec<SVGPathCSTNode>, SyntaxError> {
+    #[cfg(feature = "tracing")]
+    tracing::info!("Parsing SVG path: {:?}", path);
     let mut parser = Parser::new(path);
     parser.parse()
 }
