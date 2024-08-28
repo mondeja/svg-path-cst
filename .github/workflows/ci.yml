@@ -63,7 +63,7 @@ jobs:
         if: matrix.features[0] == null
         run: cargo test -p svg-path-cst
       - name: Integration tests
-        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
+        if: ! startsWith(matrix.os, 'windows')
         run: sh src/tests/integration.sh
 
   test-release-crate:
