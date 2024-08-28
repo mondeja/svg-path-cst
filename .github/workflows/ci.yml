@@ -55,7 +55,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ matrix.rust-toolchain }}-${{ join(matrix.features, ',') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ matrix.rust-toolchain }}-${{ join(matrix.features, '-') }}
       - name: Unit tests
         if: matrix.features[0] != null
         run: cargo test -p svg-path-cst --features ${{ join(matrix.features, ',') }}
