@@ -408,12 +408,14 @@ fn new_segment(
     SVGPathSegment {
         command,
         args: Vec::with_capacity(capacity),
-        cst: Vec::with_capacity(capacity * 2),
+        // After some profiling found that *3 looks like a good compromise
+        // between memory usage and reallocation
+        cst: Vec::with_capacity(capacity * 3),
         start,
         end: start,
         chained,
         chain_start: start,
-        chain_end: 0,
+        chain_end: start,
     }
 }
 
@@ -798,7 +800,8 @@ impl<'a> Parser<'a> {
         }
 
         let (start, end) = (first_segment.chain_start, first_segment.chain_end);
-        let mut cst = Vec::from([SVGPathCSTNode::Segment(first_segment)]);
+        let mut cst = Vec::with_capacity(1 + next_nodes.len());
+        cst.push(SVGPathCSTNode::Segment(first_segment));
         set_commands_chain_info!(cst, next_nodes, start, end);
         Ok(cst)
     }
@@ -850,7 +853,8 @@ impl<'a> Parser<'a> {
         }
 
         let (start, end) = (first_segment.chain_start, first_segment.chain_end);
-        let mut cst = Vec::from([SVGPathCSTNode::Segment(first_segment)]);
+        let mut cst = Vec::with_capacity(1 + next_nodes.len());
+        cst.push(SVGPathCSTNode::Segment(first_segment));
         set_commands_chain_info!(cst, next_nodes, start, end);
         Ok(cst)
     }
@@ -866,14 +870,19 @@ impl<'a> Parser<'a> {
         let mut first_segment = new_segment(command, self.index - 1, false);
         first_segment.cst.push(SVGPathCSTNode::Command(command));
 
-        for _ in 0..3 {
-            self.parse_whitespaces(&mut first_segment.cst);
-            self.check_unexpected_end("coordinate pair")?;
-            self.parse_coordinate_pair(
-                &mut first_segment.cst,
-                &mut first_segment.args,
-            )?;
-        }
+        // previously written as `for _ in 0..3` but unrolled
+        // because creates an iterator which is costly
+        self.parse_whitespaces(&mut first_segment.cst);
+        self.check_unexpected_end("coordinate pair")?;
+        self.parse_coordinate_pair(&mut first_segment.cst, &mut first_segment.args)?;
+
+        self.parse_whitespaces(&mut first_segment.cst);
+        self.check_unexpected_end("coordinate pair")?;
+        self.parse_coordinate_pair(&mut first_segment.cst, &mut first_segment.args)?;
+
+        self.parse_whitespaces(&mut first_segment.cst);
+        self.check_unexpected_end("coordinate pair")?;
+        self.parse_coordinate_pair(&mut first_segment.cst, &mut first_segment.args)?;
 
         first_segment.chain_end = self.index;
         first_segment.end = self.index;
@@ -907,7 +916,8 @@ impl<'a> Parser<'a> {
         }
 
         let (start, end) = (first_segment.chain_start, first_segment.chain_end);
-        let mut cst = Vec::from([SVGPathCSTNode::Segment(first_segment)]);
+        let mut cst = Vec::with_capacity(1 + next_nodes.len());
+        cst.push(SVGPathCSTNode::Segment(first_segment));
         set_commands_chain_info!(cst, next_nodes, start, end);
         Ok(cst)
     }
@@ -925,38 +935,85 @@ impl<'a> Parser<'a> {
         first_segment.cst.push(SVGPathCSTNode::Command(command));
         self.parse_whitespaces(&mut first_segment.cst);
 
-        for _ in 0..3 {
-            self.check_unexpected_end("number")?;
-            let index_before_parse_radius = self.index;
-            let (sign_node, number_node, value) = self.parse_coordinate()?;
-            if sign_node.is_some() || value > 360.0 {
-                return Err(SyntaxError::InvalidArcRadius {
-                    start: index_before_parse_radius,
-                    end: self.index,
-                    value,
-                    command: u8_command as char,
-                });
-            }
-            first_segment.args.push(value);
-            first_segment.cst.push(number_node);
-            self.parse_comma_wsp(&mut first_segment.cst)?;
-        }
-
-        for _ in 0..2 {
-            let value = self.parse_flag(u8_command)?;
-            first_segment.args.push(value);
-            first_segment.cst.push(SVGPathCSTNode::Number {
-                raw_number: if value == 0.0 {
-                    "0".to_string()
-                } else {
-                    "1".to_string()
-                },
-                value,
-                start: self.index - 1,
+        // loop unrolling here, previously written as `for _ in 0..3`
+        // 0
+        self.check_unexpected_end("number")?;
+        let index_before_parse_radius = self.index;
+        let (sign_node, number_node, value) = self.parse_coordinate()?;
+        if sign_node.is_some() || value > 360.0 {
+            return Err(SyntaxError::InvalidArcRadius {
+                start: index_before_parse_radius,
                 end: self.index,
+                value,
+                command: u8_command as char,
             });
-            self.parse_comma_wsp(&mut first_segment.cst)?;
         }
+        first_segment.args.push(value);
+        first_segment.cst.push(number_node);
+        self.parse_comma_wsp(&mut first_segment.cst)?;
+
+        // 1
+        self.check_unexpected_end("number")?;
+        let index_before_parse_radius = self.index;
+        let (sign_node, number_node, value) = self.parse_coordinate()?;
+        if sign_node.is_some() || value > 360.0 {
+            return Err(SyntaxError::InvalidArcRadius {
+                start: index_before_parse_radius,
+                end: self.index,
+                value,
+                command: u8_command as char,
+            });
+        }
+        first_segment.args.push(value);
+        first_segment.cst.push(number_node);
+        self.parse_comma_wsp(&mut first_segment.cst)?;
+
+        // 2
+        self.check_unexpected_end("number")?;
+        let index_before_parse_radius = self.index;
+        let (sign_node, number_node, value) = self.parse_coordinate()?;
+        if sign_node.is_some() || value > 360.0 {
+            return Err(SyntaxError::InvalidArcRadius {
+                start: index_before_parse_radius,
+                end: self.index,
+                value,
+                command: u8_command as char,
+            });
+        }
+        first_segment.args.push(value);
+        first_segment.cst.push(number_node);
+        self.parse_comma_wsp(&mut first_segment.cst)?;
+
+        // loop unrolling here, previously written as `for _ in 0..2`
+        // 0
+        let value = self.parse_flag(u8_command)?;
+        first_segment.args.push(value);
+        first_segment.cst.push(SVGPathCSTNode::Number {
+            raw_number: if value == 0.0 {
+                "0".to_string()
+            } else {
+                "1".to_string()
+            },
+            value,
+            start: self.index - 1,
+            end: self.index,
+        });
+        self.parse_comma_wsp(&mut first_segment.cst)?;
+
+        // 1
+        let value = self.parse_flag(u8_command)?;
+        first_segment.args.push(value);
+        first_segment.cst.push(SVGPathCSTNode::Number {
+            raw_number: if value == 0.0 {
+                "0".to_string()
+            } else {
+                "1".to_string()
+            },
+            value,
+            start: self.index - 1,
+            end: self.index,
+        });
+        self.parse_comma_wsp(&mut first_segment.cst)?;
 
         self.parse_coordinate_pair(&mut first_segment.cst, &mut first_segment.args)?;
 
@@ -1023,7 +1080,8 @@ impl<'a> Parser<'a> {
         }
 
         let (start, end) = (first_segment.chain_start, first_segment.chain_end);
-        let mut cst = Vec::from([SVGPathCSTNode::Segment(first_segment)]);
+        let mut cst = Vec::with_capacity(1 + next_nodes.len());
+        cst.push(SVGPathCSTNode::Segment(first_segment));
         set_commands_chain_info!(cst, next_nodes, start, end);
         Ok(cst)
     }
@@ -1086,7 +1144,8 @@ impl<'a> Parser<'a> {
         }
 
         let (start, end) = (first_segment.chain_start, first_segment.chain_end);
-        let mut cst = Vec::from([SVGPathCSTNode::Segment(first_segment)]);
+        let mut cst = Vec::with_capacity(1 + next_nodes.len());
+        cst.push(SVGPathCSTNode::Segment(first_segment));
         set_commands_chain_info!(cst, next_nodes, start, end);
         Ok(cst)
     }
