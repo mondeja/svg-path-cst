@@ -1,3 +1,6 @@
 target/
 Cargo.lock
 .prettier-cache
+*.svg
+*.data
+*.data.old

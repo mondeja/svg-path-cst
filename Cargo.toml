@@ -1,6 +1,6 @@
 [package]
 name = "svg-path-cst"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 readme = "README.md"
 description = "CST SVG path parser."
@@ -12,12 +12,21 @@ repository = "https://github.com/mondeja/svg-path-cst"
 name = "svg_path_cst"
 path = "src/lib.rs"
 
-[dependencies]
-snafu = { version = "0.8.0", default_features = false }
-tracing = { version = "0.1", optional = true }
-
-[dev-dependencies]
-doc-comment = "0.3.3"
+[[bin]]
+name = "svg-path-cst"
+path = "src/main.rs"
 
 [features]
 tracing = ["dep:tracing"]
+
+[dependencies]
+snafu = { version = "0.8", default-features = false }
+tracing = { version = "0.1", optional = true, default-features = false, features = ["attributes"]}
+
+[dev-dependencies]
+doc-comment = "0.3.3"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "performance"
+harness = false

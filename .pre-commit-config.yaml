@@ -50,3 +50,7 @@ repos:
             -D,
             clippy::semicolon_if_nothing_returned,
           ]
+  - repo: https://github.com/mondeja/rust-pc-hooks
+    rev: v1.2.0
+    hooks:
+      - id: cargo-machete

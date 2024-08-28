@@ -100,6 +100,6 @@ This crate is compatible with SVG v1.1 paths, as defined in the [W3C SVG 1.1](ht
 
 ## Features
 
-- **Tracing support**: `tracing` (see [`tracing`])
+- **`tracing`**: Adds [`tracing`] support.
 
 [`tracing`]: https://docs.rs/tracing/latest/tracing

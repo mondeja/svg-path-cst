@@ -1432,7 +1432,46 @@ fn invalid_utf8_length_1() {
 
 #[test]
 fn simple_icons_icon_path() {
-    let cst = svg_path_cst(b"M12 0C8.688 0 6 2.688 6 6s2.688 6 6 6c1.066 0 2.1171.2862 3.0371.8262 2.858 1.678 3.8167 5.3539 2.1387 8.2129h1.6797a7.4925 7.4925 0 0 0 .6425-3.0293c.003-4.144-3.356-7.5048-7.498-7.5098-2.484 0-4.5-2.016-4.5-4.5S9.516 1.5 12 1.5s4.5 2.016 4.5 4.5H18c0-3.312-2.688-6-6-6zm0 3c-1.597.04-2.8799 1.3259-2.9219 2.9219C9.0351 7.5799 10.343 8.957 12 9c1.597-.04 2.8799-1.3259 2.9219-2.9219C14.9649 4.4201 13.656 3.043 12 3zm0 1.5c.828 0 1.5.672 1.5 1.5v.002c0 .828-.672 1.5-1.5 1.5-.83 0-1.5-.673-1.5-1.502 0-.83.67-1.5 1.5-1.5zM7.5 15v1.5H9v6H4.5V24h15v-1.5H15v-6h1.5V15h-9zm3 1.5h3v6h-3v-6zm-6 1.4707V18a7.418 7.418 0 0 0 .6445 3.039h1.6836C6.3001 20.147 6 19.11 6 18v-.0293H4.5Z");
+    let cst = svg_path_cst(include_bytes!("../fuzz/corpus/simpleicons.txt"));
     assert!(cst.is_ok());
-    assert_eq!(cst.unwrap().len(), 57);
+    assert_eq!(cst.unwrap().len(), 46);
+}
+
+#[test]
+fn sign_as_char() {
+    assert_eq!(Sign::Plus as u8 as char, '+');
+    assert_eq!(Sign::Minus as u8 as char, '-');
+}
+
+#[test]
+fn wsp_as_char() {
+    assert_eq!(WSP::Space as u8 as char, ' ');
+    assert_eq!(WSP::Tab as u8 as char, '\t');
+    assert_eq!(WSP::LineFeed as u8 as char, '\n');
+    assert_eq!(WSP::CarriageReturn as u8 as char, '\r');
+    assert_eq!(WSP::FormFeed as u8 as char, '\x0C');
+}
+
+#[test]
+fn svg_path_command_as_char() {
+    assert_eq!(SVGPathCommand::MovetoUpper as u8 as char, 'M');
+    assert_eq!(SVGPathCommand::MovetoLower as u8 as char, 'm');
+    assert_eq!(SVGPathCommand::ClosepathUpper as u8 as char, 'Z');
+    assert_eq!(SVGPathCommand::ClosepathLower as u8 as char, 'z');
+    assert_eq!(SVGPathCommand::LinetoUpper as u8 as char, 'L');
+    assert_eq!(SVGPathCommand::LinetoLower as u8 as char, 'l');
+    assert_eq!(SVGPathCommand::HorizontalUpper as u8 as char, 'H');
+    assert_eq!(SVGPathCommand::HorizontalLower as u8 as char, 'h');
+    assert_eq!(SVGPathCommand::VerticalUpper as u8 as char, 'V');
+    assert_eq!(SVGPathCommand::VerticalLower as u8 as char, 'v');
+    assert_eq!(SVGPathCommand::CurvetoUpper as u8 as char, 'C');
+    assert_eq!(SVGPathCommand::CurvetoLower as u8 as char, 'c');
+    assert_eq!(SVGPathCommand::SmoothCurvetoUpper as u8 as char, 'S');
+    assert_eq!(SVGPathCommand::SmoothCurvetoLower as u8 as char, 's');
+    assert_eq!(SVGPathCommand::QuadraticUpper as u8 as char, 'Q');
+    assert_eq!(SVGPathCommand::QuadraticLower as u8 as char, 'q');
+    assert_eq!(SVGPathCommand::SmoothQuadraticUpper as u8 as char, 'T');
+    assert_eq!(SVGPathCommand::SmoothQuadraticLower as u8 as char, 't');
+    assert_eq!(SVGPathCommand::ArcUpper as u8 as char, 'A');
+    assert_eq!(SVGPathCommand::ArcLower as u8 as char, 'a');
 }
