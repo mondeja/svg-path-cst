@@ -1,47 +1,27 @@
-extern crate alloc;
-use crate::alloc::{format, string::ToString, vec, vec::Vec};
+use crate::tests::helpers::*;
+use crate::{
+    svg_path_cst, SVGPathCSTNode, SVGPathCommand, SVGPathSegment, Sign, SyntaxError,
+    WSP,
+};
 
-use crate::errors::SyntaxError;
-use crate::{svg_path_cst, SVGPathCSTNode, SVGPathCommand, SVGPathSegment, Sign, WSP};
-
-macro_rules! assert_svg_path_cst {
-    ($path:expr, $expected:expr) => {
-        assert_eq!(svg_path_cst($path), Ok($expected));
-    };
-}
-
-macro_rules! assert_svg_path_cst_fmt {
-    ($path:expr, $expected:expr) => {
-        let cst = svg_path_cst($path);
-        assert!(cst.is_ok());
-        assert_eq!(format!("{:?}", cst.unwrap()), $expected);
-    };
-}
-
-macro_rules! assert_svg_path_cst_err {
-    ($path:expr, $expected:expr) => {
-        assert_eq!(svg_path_cst($path), Err($expected));
-    };
+#[test]
+fn empty() {
+    assert_svg_path_cst(b"", Vec::new());
 }
 
 #[test]
-fn test_empty() {
-    assert_svg_path_cst!(b"", Vec::with_capacity(0));
+fn none() {
+    assert_svg_path_cst(b"none", vec![SVGPathCSTNode::None]);
 }
 
 #[test]
-fn test_none() {
-    assert_svg_path_cst!(b"none", vec![SVGPathCSTNode::None]);
+fn none_fmt() {
+    assert_svg_path_cst_fmt(b"none", "[None]");
 }
 
 #[test]
-fn test_none_fmt() {
-    assert_svg_path_cst_fmt!(b"none", "[None]");
-}
-
-#[test]
-fn test_whitespaces() {
-    assert_svg_path_cst!(
+fn whitespaces() {
+    assert_svg_path_cst(
         b" \t\n\r \x0C",
         vec![
             SVGPathCSTNode::Whitespace {
@@ -74,13 +54,13 @@ fn test_whitespaces() {
                 start: 5,
                 end: 6,
             },
-        ]
+        ],
     );
 }
 
 #[test]
-fn test_whitespaces_fmt() {
-    assert_svg_path_cst_fmt!(
+fn whitespaces_fmt() {
+    assert_svg_path_cst_fmt(
         b" \t\n\r \x0C",
         concat!(
             "[Whitespace { wsp: Space, start: 0, end: 1 },",
@@ -89,92 +69,92 @@ fn test_whitespaces_fmt() {
             " Whitespace { wsp: CarriageReturn, start: 3, end: 4 },",
             " Whitespace { wsp: Space, start: 4, end: 5 },",
             " Whitespace { wsp: FormFeed, start: 5, end: 6 }]",
-        )
+        ),
     );
 }
 
 #[test]
 fn invalid_character() {
-    let expected = "number or command".to_string();
+    let expected = "number or command";
 
-    assert_svg_path_cst_err!(
+    assert_svg_path_cst_err(
         b"m0 0 !l10 10",
         SyntaxError::InvalidCharacter {
             character: '!',
             index: 5,
-            expected: expected.clone(),
-        }
+            expected,
+        },
     );
 
-    assert_svg_path_cst_err!(
+    assert_svg_path_cst_err(
         b"m0 0 l!10 10",
         SyntaxError::InvalidCharacter {
             character: '!',
             index: 6,
-            expected: expected.clone(),
-        }
+            expected,
+        },
     );
 
-    assert_svg_path_cst_err!(
+    assert_svg_path_cst_err(
         b"m0 ! 0",
         SyntaxError::InvalidCharacter {
             character: '!',
             index: 3,
-            expected: expected.clone(),
-        }
+            expected,
+        },
     );
 
-    assert_svg_path_cst_err!(
+    assert_svg_path_cst_err(
         b"m0 \t\n 0!",
         SyntaxError::InvalidCharacter {
             character: '!',
             index: 7,
-            expected: expected.clone(),
-        }
+            expected,
+        },
     );
 }
 
 #[test]
 fn invalid_moveto_at_start() {
-    assert_svg_path_cst_err!(
+    assert_svg_path_cst_err(
         b"A 10 10",
         SyntaxError::ExpectedMovetoCommand {
-            command: 'A',
+            character: 'A',
             index: 0,
-        }
+        },
     );
 }
 
 #[test]
 fn invalid_moveto_after_wsp() {
-    assert_svg_path_cst_err!(
+    assert_svg_path_cst_err(
         b" \t\n\r \x0C A 10 10",
         SyntaxError::ExpectedMovetoCommand {
-            command: 'A',
+            character: 'A',
             index: 7,
-        }
+        },
     );
 }
 
 #[test]
 fn invalid_end_in_moveto() {
-    assert_svg_path_cst_err!(
+    assert_svg_path_cst_err(
         b"m 10",
         SyntaxError::UnexpectedEnding {
             index: 3,
-            expected: "comma or whitespace".to_string(),
-        }
+            expected: "comma or whitespace",
+        },
     );
 }
 
 #[test]
 fn invalid_moveto_args() {
-    assert_svg_path_cst_err!(
+    assert_svg_path_cst_err(
         b"m 1 2 3",
         SyntaxError::UnexpectedEnding {
             index: 6,
-            expected: "comma or whitespace".to_string(),
-        }
+            expected: "comma or whitespace",
+        },
     );
 }
 
@@ -194,7 +174,7 @@ fn basic_moveto() {
                     end: 2,
                 },
                 SVGPathCSTNode::Number {
-                    raw_number: "10".to_string(),
+                    raw_number: "10".into(),
                     value: 10.0,
                     start: 2,
                     end: 4,
@@ -204,7 +184,7 @@ fn basic_moveto() {
                     start: 4,
                 },
                 SVGPathCSTNode::Number {
-                    raw_number: "10".to_string(),
+                    raw_number: "10".into(),
                     value: 10.0,
                     start: 5,
                     end: 7,
@@ -221,7 +201,7 @@ fn basic_moveto() {
 
 #[test]
 fn basic_moveto_fmt() {
-    assert_svg_path_cst_fmt!(
+    assert_svg_path_cst_fmt(
         b"m 10-10",
         concat!(
             "[Segment(SVGPathSegment {",
@@ -236,13 +216,13 @@ fn basic_moveto_fmt() {
             " start: 0, end: 7, chained: false,",
             " chain_start: 0, chain_end: 7",
             " })]",
-        )
+        ),
     );
 }
 
 #[test]
 fn moveto_whitespaces() {
-    assert_svg_path_cst!(
+    assert_svg_path_cst(
         b" M \t10\r 10 ",
         vec![
             SVGPathCSTNode::Whitespace {
@@ -266,7 +246,7 @@ fn moveto_whitespaces() {
                         end: 4,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "10".to_string(),
+                        raw_number: "10".into(),
                         value: 10.0,
                         start: 4,
                         end: 6,
@@ -282,7 +262,7 @@ fn moveto_whitespaces() {
                         end: 8,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "10".to_string(),
+                        raw_number: "10".into(),
                         value: 10.0,
                         start: 8,
                         end: 10,
@@ -299,13 +279,13 @@ fn moveto_whitespaces() {
                 start: 10,
                 end: 11,
             },
-        ]
+        ],
     );
 }
 
 #[test]
 fn chained_moveto() {
-    assert_svg_path_cst!(
+    assert_svg_path_cst(
         b"M 10 10 20 20",
         vec![
             SVGPathCSTNode::Segment(SVGPathSegment {
@@ -319,7 +299,7 @@ fn chained_moveto() {
                         end: 2,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "10".to_string(),
+                        raw_number: "10".into(),
                         value: 10.0,
                         start: 2,
                         end: 4,
@@ -330,7 +310,7 @@ fn chained_moveto() {
                         end: 5,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "10".to_string(),
+                        raw_number: "10".into(),
                         value: 10.0,
                         start: 5,
                         end: 7,
@@ -352,7 +332,7 @@ fn chained_moveto() {
                 args: vec![20.0, 20.0],
                 cst: vec![
                     SVGPathCSTNode::Number {
-                        raw_number: "20".to_string(),
+                        raw_number: "20".into(),
                         value: 20.0,
                         start: 8,
                         end: 10,
@@ -363,7 +343,7 @@ fn chained_moveto() {
                         end: 11,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "20".to_string(),
+                        raw_number: "20".into(),
                         value: 20.0,
                         start: 11,
                         end: 13,
@@ -375,13 +355,13 @@ fn chained_moveto() {
                 chain_start: 0,
                 chain_end: 13,
             }),
-        ]
+        ],
     );
 }
 
 #[test]
 fn moveto_and_moveto_drawto() {
-    assert_svg_path_cst!(
+    assert_svg_path_cst(
         b"M10 10 M5 -4.6",
         vec![
             SVGPathCSTNode::Segment(SVGPathSegment {
@@ -390,7 +370,7 @@ fn moveto_and_moveto_drawto() {
                 cst: vec![
                     SVGPathCSTNode::Command(&SVGPathCommand::MovetoUpper),
                     SVGPathCSTNode::Number {
-                        raw_number: "10".to_string(),
+                        raw_number: "10".into(),
                         value: 10.0,
                         start: 1,
                         end: 3,
@@ -401,7 +381,7 @@ fn moveto_and_moveto_drawto() {
                         end: 4,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "10".to_string(),
+                        raw_number: "10".into(),
                         value: 10.0,
                         start: 4,
                         end: 6,
@@ -424,7 +404,7 @@ fn moveto_and_moveto_drawto() {
                 cst: vec![
                     SVGPathCSTNode::Command(&SVGPathCommand::MovetoUpper),
                     SVGPathCSTNode::Number {
-                        raw_number: "5".to_string(),
+                        raw_number: "5".into(),
                         value: 5.0,
                         start: 8,
                         end: 9,
@@ -439,7 +419,7 @@ fn moveto_and_moveto_drawto() {
                         start: 10,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "4.6".to_string(),
+                        raw_number: "4.6".into(),
                         value: 4.6,
                         start: 11,
                         end: 14,
@@ -451,13 +431,13 @@ fn moveto_and_moveto_drawto() {
                 chain_start: 7,
                 chain_end: 14,
             }),
-        ]
+        ],
     );
 }
 
 #[test]
 fn horizontal_and_vertical() {
-    assert_svg_path_cst!(
+    assert_svg_path_cst(
         b"m1 2h6v-3 5",
         vec![
             SVGPathCSTNode::Segment(SVGPathSegment {
@@ -466,7 +446,7 @@ fn horizontal_and_vertical() {
                 cst: vec![
                     SVGPathCSTNode::Command(&SVGPathCommand::MovetoLower),
                     SVGPathCSTNode::Number {
-                        raw_number: "1".to_string(),
+                        raw_number: "1".into(),
                         value: 1.0,
                         start: 1,
                         end: 2,
@@ -477,7 +457,7 @@ fn horizontal_and_vertical() {
                         end: 3,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "2".to_string(),
+                        raw_number: "2".into(),
                         value: 2.0,
                         start: 3,
                         end: 4,
@@ -495,7 +475,7 @@ fn horizontal_and_vertical() {
                 cst: vec![
                     SVGPathCSTNode::Command(&SVGPathCommand::HorizontalLower),
                     SVGPathCSTNode::Number {
-                        raw_number: "6".to_string(),
+                        raw_number: "6".into(),
                         value: 6.0,
                         start: 5,
                         end: 6,
@@ -517,7 +497,7 @@ fn horizontal_and_vertical() {
                         start: 7,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "3".to_string(),
+                        raw_number: "3".into(),
                         value: 3.0,
                         start: 8,
                         end: 9,
@@ -538,24 +518,24 @@ fn horizontal_and_vertical() {
                 command: &SVGPathCommand::VerticalLower,
                 args: vec![5.0],
                 cst: vec![SVGPathCSTNode::Number {
-                    raw_number: "5".to_string(),
+                    raw_number: "5".into(),
                     value: 5.0,
                     start: 10,
                     end: 11,
-                },],
+                }],
                 start: 10,
                 end: 11,
                 chained: true,
                 chain_start: 6,
                 chain_end: 11,
             }),
-        ]
+        ],
     );
 }
 
 #[test]
 fn moveto_curveto() {
-    assert_svg_path_cst!(
+    assert_svg_path_cst(
         b"m0 0c100,100 250,100 250,200 200,200 500,200 500,400",
         vec![
             SVGPathCSTNode::Segment(SVGPathSegment {
@@ -564,7 +544,7 @@ fn moveto_curveto() {
                 cst: vec![
                     SVGPathCSTNode::Command(&SVGPathCommand::MovetoLower),
                     SVGPathCSTNode::Number {
-                        raw_number: "0".to_string(),
+                        raw_number: "0".into(),
                         value: 0.0,
                         start: 1,
                         end: 2,
@@ -575,7 +555,7 @@ fn moveto_curveto() {
                         end: 3,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "0".to_string(),
+                        raw_number: "0".into(),
                         value: 0.0,
                         start: 3,
                         end: 4,
@@ -593,14 +573,14 @@ fn moveto_curveto() {
                 cst: vec![
                     SVGPathCSTNode::Command(&SVGPathCommand::CurvetoLower),
                     SVGPathCSTNode::Number {
-                        raw_number: "100".to_string(),
+                        raw_number: "100".into(),
                         value: 100.0,
                         start: 5,
                         end: 8,
                     },
                     SVGPathCSTNode::Comma { start: 8 },
                     SVGPathCSTNode::Number {
-                        raw_number: "100".to_string(),
+                        raw_number: "100".into(),
                         value: 100.0,
                         start: 9,
                         end: 12,
@@ -611,14 +591,14 @@ fn moveto_curveto() {
                         end: 13,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "250".to_string(),
+                        raw_number: "250".into(),
                         value: 250.0,
                         start: 13,
                         end: 16,
                     },
                     SVGPathCSTNode::Comma { start: 16 },
                     SVGPathCSTNode::Number {
-                        raw_number: "100".to_string(),
+                        raw_number: "100".into(),
                         value: 100.0,
                         start: 17,
                         end: 20,
@@ -629,14 +609,14 @@ fn moveto_curveto() {
                         end: 21,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "250".to_string(),
+                        raw_number: "250".into(),
                         value: 250.0,
                         start: 21,
                         end: 24,
                     },
                     SVGPathCSTNode::Comma { start: 24 },
                     SVGPathCSTNode::Number {
-                        raw_number: "200".to_string(),
+                        raw_number: "200".into(),
                         value: 200.0,
                         start: 25,
                         end: 28,
@@ -658,14 +638,14 @@ fn moveto_curveto() {
                 args: vec![200.0, 200.0, 500.0, 200.0, 500.0, 400.0],
                 cst: vec![
                     SVGPathCSTNode::Number {
-                        raw_number: "200".to_string(),
+                        raw_number: "200".into(),
                         value: 200.0,
                         start: 29,
                         end: 32,
                     },
                     SVGPathCSTNode::Comma { start: 32 },
                     SVGPathCSTNode::Number {
-                        raw_number: "200".to_string(),
+                        raw_number: "200".into(),
                         value: 200.0,
                         start: 33,
                         end: 36,
@@ -676,14 +656,14 @@ fn moveto_curveto() {
                         end: 37,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "500".to_string(),
+                        raw_number: "500".into(),
                         value: 500.0,
                         start: 37,
                         end: 40,
                     },
                     SVGPathCSTNode::Comma { start: 40 },
                     SVGPathCSTNode::Number {
-                        raw_number: "200".to_string(),
+                        raw_number: "200".into(),
                         value: 200.0,
                         start: 41,
                         end: 44,
@@ -694,14 +674,14 @@ fn moveto_curveto() {
                         end: 45,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "500".to_string(),
+                        raw_number: "500".into(),
                         value: 500.0,
                         start: 45,
                         end: 48,
                     },
                     SVGPathCSTNode::Comma { start: 48 },
                     SVGPathCSTNode::Number {
-                        raw_number: "400".to_string(),
+                        raw_number: "400".into(),
                         value: 400.0,
                         start: 49,
                         end: 52,
@@ -713,13 +693,13 @@ fn moveto_curveto() {
                 chain_start: 4,
                 chain_end: 52,
             }),
-        ]
+        ],
     );
 }
 
 #[test]
 fn moveto_smooth_curveto() {
-    assert_svg_path_cst!(
+    assert_svg_path_cst(
         b"m0 0s100,100 250,200 150 150 300 300",
         vec![
             SVGPathCSTNode::Segment(SVGPathSegment {
@@ -728,7 +708,7 @@ fn moveto_smooth_curveto() {
                 cst: vec![
                     SVGPathCSTNode::Command(&SVGPathCommand::MovetoLower),
                     SVGPathCSTNode::Number {
-                        raw_number: "0".to_string(),
+                        raw_number: "0".into(),
                         value: 0.0,
                         start: 1,
                         end: 2,
@@ -739,7 +719,7 @@ fn moveto_smooth_curveto() {
                         end: 3,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "0".to_string(),
+                        raw_number: "0".into(),
                         value: 0.0,
                         start: 3,
                         end: 4,
@@ -757,14 +737,14 @@ fn moveto_smooth_curveto() {
                 cst: vec![
                     SVGPathCSTNode::Command(&SVGPathCommand::SmoothCurvetoLower),
                     SVGPathCSTNode::Number {
-                        raw_number: "100".to_string(),
+                        raw_number: "100".into(),
                         value: 100.0,
                         start: 5,
                         end: 8,
                     },
                     SVGPathCSTNode::Comma { start: 8 },
                     SVGPathCSTNode::Number {
-                        raw_number: "100".to_string(),
+                        raw_number: "100".into(),
                         value: 100.0,
                         start: 9,
                         end: 12,
@@ -775,14 +755,14 @@ fn moveto_smooth_curveto() {
                         end: 13,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "250".to_string(),
+                        raw_number: "250".into(),
                         value: 250.0,
                         start: 13,
                         end: 16,
                     },
                     SVGPathCSTNode::Comma { start: 16 },
                     SVGPathCSTNode::Number {
-                        raw_number: "200".to_string(),
+                        raw_number: "200".into(),
                         value: 200.0,
                         start: 17,
                         end: 20,
@@ -804,7 +784,7 @@ fn moveto_smooth_curveto() {
                 args: vec![150.0, 150.0, 300.0, 300.0],
                 cst: vec![
                     SVGPathCSTNode::Number {
-                        raw_number: "150".to_string(),
+                        raw_number: "150".into(),
                         value: 150.0,
                         start: 21,
                         end: 24,
@@ -815,7 +795,7 @@ fn moveto_smooth_curveto() {
                         end: 25,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "150".to_string(),
+                        raw_number: "150".into(),
                         value: 150.0,
                         start: 25,
                         end: 28,
@@ -826,7 +806,7 @@ fn moveto_smooth_curveto() {
                         end: 29,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "300".to_string(),
+                        raw_number: "300".into(),
                         value: 300.0,
                         start: 29,
                         end: 32,
@@ -837,7 +817,7 @@ fn moveto_smooth_curveto() {
                         end: 33,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "300".to_string(),
+                        raw_number: "300".into(),
                         value: 300.0,
                         start: 33,
                         end: 36,
@@ -849,13 +829,13 @@ fn moveto_smooth_curveto() {
                 chain_start: 4,
                 chain_end: 36,
             }),
-        ]
+        ],
     );
 }
 
 #[test]
 fn moveto_arc() {
-    assert_svg_path_cst!(
+    assert_svg_path_cst(
         b"m0 0a100,100 0 0 1 250,200 150 150 0 0 0 300 300",
         vec![
             SVGPathCSTNode::Segment(SVGPathSegment {
@@ -864,7 +844,7 @@ fn moveto_arc() {
                 cst: vec![
                     SVGPathCSTNode::Command(&SVGPathCommand::MovetoLower),
                     SVGPathCSTNode::Number {
-                        raw_number: "0".to_string(),
+                        raw_number: "0".into(),
                         value: 0.0,
                         start: 1,
                         end: 2,
@@ -875,7 +855,7 @@ fn moveto_arc() {
                         end: 3,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "0".to_string(),
+                        raw_number: "0".into(),
                         value: 0.0,
                         start: 3,
                         end: 4,
@@ -893,14 +873,14 @@ fn moveto_arc() {
                 cst: vec![
                     SVGPathCSTNode::Command(&SVGPathCommand::ArcLower),
                     SVGPathCSTNode::Number {
-                        raw_number: "100".to_string(),
+                        raw_number: "100".into(),
                         value: 100.0,
                         start: 5,
                         end: 8,
                     },
                     SVGPathCSTNode::Comma { start: 8 },
                     SVGPathCSTNode::Number {
-                        raw_number: "100".to_string(),
+                        raw_number: "100".into(),
                         value: 100.0,
                         start: 9,
                         end: 12,
@@ -911,7 +891,7 @@ fn moveto_arc() {
                         end: 13,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "0".to_string(),
+                        raw_number: "0".into(),
                         value: 0.0,
                         start: 13,
                         end: 14,
@@ -922,7 +902,7 @@ fn moveto_arc() {
                         end: 15,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "0".to_string(),
+                        raw_number: "0".into(),
                         value: 0.0,
                         start: 15,
                         end: 16,
@@ -933,7 +913,7 @@ fn moveto_arc() {
                         end: 17,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "1".to_string(),
+                        raw_number: "1".into(),
                         value: 1.0,
                         start: 17,
                         end: 18,
@@ -944,14 +924,14 @@ fn moveto_arc() {
                         end: 19,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "250".to_string(),
+                        raw_number: "250".into(),
                         value: 250.0,
                         start: 19,
                         end: 22,
                     },
                     SVGPathCSTNode::Comma { start: 22 },
                     SVGPathCSTNode::Number {
-                        raw_number: "200".to_string(),
+                        raw_number: "200".into(),
                         value: 200.0,
                         start: 23,
                         end: 26,
@@ -973,7 +953,7 @@ fn moveto_arc() {
                 args: vec![150.0, 150.0, 0.0, 0.0, 0.0, 300.0, 300.0],
                 cst: vec![
                     SVGPathCSTNode::Number {
-                        raw_number: "150".to_string(),
+                        raw_number: "150".into(),
                         value: 150.0,
                         start: 27,
                         end: 30,
@@ -984,7 +964,7 @@ fn moveto_arc() {
                         end: 31,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "150".to_string(),
+                        raw_number: "150".into(),
                         value: 150.0,
                         start: 31,
                         end: 34,
@@ -995,7 +975,7 @@ fn moveto_arc() {
                         end: 35,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "0".to_string(),
+                        raw_number: "0".into(),
                         value: 0.0,
                         start: 35,
                         end: 36,
@@ -1006,7 +986,7 @@ fn moveto_arc() {
                         end: 37,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "0".to_string(),
+                        raw_number: "0".into(),
                         value: 0.0,
                         start: 37,
                         end: 38,
@@ -1017,7 +997,7 @@ fn moveto_arc() {
                         end: 39,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "0".to_string(),
+                        raw_number: "0".into(),
                         value: 0.0,
                         start: 39,
                         end: 40,
@@ -1028,7 +1008,7 @@ fn moveto_arc() {
                         end: 41,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "300".to_string(),
+                        raw_number: "300".into(),
                         value: 300.0,
                         start: 41,
                         end: 44,
@@ -1039,7 +1019,7 @@ fn moveto_arc() {
                         end: 45,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "300".to_string(),
+                        raw_number: "300".into(),
                         value: 300.0,
                         start: 45,
                         end: 48,
@@ -1051,25 +1031,25 @@ fn moveto_arc() {
                 chain_start: 4,
                 chain_end: 48,
             }),
-        ]
+        ],
     );
 }
 
 #[test]
 fn invalid_arc_flag() {
-    assert_svg_path_cst_err!(
+    assert_svg_path_cst_err(
         b"m0 0a100,100 0 2 1 250,200",
         SyntaxError::InvalidArcFlag {
             index: 15,
             character: '2',
             command: 'a',
-        }
+        },
     );
 }
 
 #[test]
 fn moveto_quadratic() {
-    assert_svg_path_cst!(
+    assert_svg_path_cst(
         b"m0 0q100,100 250,200 150 150 300 300",
         vec![
             SVGPathCSTNode::Segment(SVGPathSegment {
@@ -1078,7 +1058,7 @@ fn moveto_quadratic() {
                 cst: vec![
                     SVGPathCSTNode::Command(&SVGPathCommand::MovetoLower),
                     SVGPathCSTNode::Number {
-                        raw_number: "0".to_string(),
+                        raw_number: "0".into(),
                         value: 0.0,
                         start: 1,
                         end: 2,
@@ -1089,7 +1069,7 @@ fn moveto_quadratic() {
                         end: 3,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "0".to_string(),
+                        raw_number: "0".into(),
                         value: 0.0,
                         start: 3,
                         end: 4,
@@ -1107,14 +1087,14 @@ fn moveto_quadratic() {
                 cst: vec![
                     SVGPathCSTNode::Command(&SVGPathCommand::QuadraticLower),
                     SVGPathCSTNode::Number {
-                        raw_number: "100".to_string(),
+                        raw_number: "100".into(),
                         value: 100.0,
                         start: 5,
                         end: 8,
                     },
                     SVGPathCSTNode::Comma { start: 8 },
                     SVGPathCSTNode::Number {
-                        raw_number: "100".to_string(),
+                        raw_number: "100".into(),
                         value: 100.0,
                         start: 9,
                         end: 12,
@@ -1125,14 +1105,14 @@ fn moveto_quadratic() {
                         end: 13,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "250".to_string(),
+                        raw_number: "250".into(),
                         value: 250.0,
                         start: 13,
                         end: 16,
                     },
                     SVGPathCSTNode::Comma { start: 16 },
                     SVGPathCSTNode::Number {
-                        raw_number: "200".to_string(),
+                        raw_number: "200".into(),
                         value: 200.0,
                         start: 17,
                         end: 20,
@@ -1154,7 +1134,7 @@ fn moveto_quadratic() {
                 args: vec![150.0, 150.0, 300.0, 300.0],
                 cst: vec![
                     SVGPathCSTNode::Number {
-                        raw_number: "150".to_string(),
+                        raw_number: "150".into(),
                         value: 150.0,
                         start: 21,
                         end: 24,
@@ -1165,7 +1145,7 @@ fn moveto_quadratic() {
                         end: 25,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "150".to_string(),
+                        raw_number: "150".into(),
                         value: 150.0,
                         start: 25,
                         end: 28,
@@ -1176,7 +1156,7 @@ fn moveto_quadratic() {
                         end: 29,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "300".to_string(),
+                        raw_number: "300".into(),
                         value: 300.0,
                         start: 29,
                         end: 32,
@@ -1187,7 +1167,7 @@ fn moveto_quadratic() {
                         end: 33,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "300".to_string(),
+                        raw_number: "300".into(),
                         value: 300.0,
                         start: 33,
                         end: 36,
@@ -1199,13 +1179,13 @@ fn moveto_quadratic() {
                 chain_start: 4,
                 chain_end: 36,
             }),
-        ]
+        ],
     );
 }
 
 #[test]
 fn moveto_smooth_quadratic() {
-    assert_svg_path_cst!(
+    assert_svg_path_cst(
         b"m0 0t100,100 250,200",
         vec![
             SVGPathCSTNode::Segment(SVGPathSegment {
@@ -1214,7 +1194,7 @@ fn moveto_smooth_quadratic() {
                 cst: vec![
                     SVGPathCSTNode::Command(&SVGPathCommand::MovetoLower),
                     SVGPathCSTNode::Number {
-                        raw_number: "0".to_string(),
+                        raw_number: "0".into(),
                         value: 0.0,
                         start: 1,
                         end: 2,
@@ -1225,7 +1205,7 @@ fn moveto_smooth_quadratic() {
                         end: 3,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "0".to_string(),
+                        raw_number: "0".into(),
                         value: 0.0,
                         start: 3,
                         end: 4,
@@ -1243,14 +1223,14 @@ fn moveto_smooth_quadratic() {
                 cst: vec![
                     SVGPathCSTNode::Command(&SVGPathCommand::SmoothQuadraticLower),
                     SVGPathCSTNode::Number {
-                        raw_number: "100".to_string(),
+                        raw_number: "100".into(),
                         value: 100.0,
                         start: 5,
                         end: 8,
                     },
                     SVGPathCSTNode::Comma { start: 8 },
                     SVGPathCSTNode::Number {
-                        raw_number: "100".to_string(),
+                        raw_number: "100".into(),
                         value: 100.0,
                         start: 9,
                         end: 12,
@@ -1272,14 +1252,14 @@ fn moveto_smooth_quadratic() {
                 args: vec![250.0, 200.0],
                 cst: vec![
                     SVGPathCSTNode::Number {
-                        raw_number: "250".to_string(),
+                        raw_number: "250".into(),
                         value: 250.0,
                         start: 13,
                         end: 16,
                     },
                     SVGPathCSTNode::Comma { start: 16 },
                     SVGPathCSTNode::Number {
-                        raw_number: "200".to_string(),
+                        raw_number: "200".into(),
                         value: 200.0,
                         start: 17,
                         end: 20,
@@ -1291,25 +1271,25 @@ fn moveto_smooth_quadratic() {
                 chain_start: 4,
                 chain_end: 20,
             }),
-        ]
+        ],
     );
 }
 
 #[test]
 fn invalid_multiple_commas() {
-    assert_svg_path_cst_err!(
+    assert_svg_path_cst_err(
         b"m0 0,,100,100",
         SyntaxError::InvalidNumber {
-            number: ",".to_string(),
+            number: ",".into(),
             start: 4,
             end: 5,
-        }
+        },
     );
 }
 
 #[test]
 fn arc_with_flags_together() {
-    assert_svg_path_cst!(
+    assert_svg_path_cst(
         b"m0 0a1.862 1.862 0 00-.248.033",
         vec![
             SVGPathCSTNode::Segment(SVGPathSegment {
@@ -1318,7 +1298,7 @@ fn arc_with_flags_together() {
                 cst: vec![
                     SVGPathCSTNode::Command(&SVGPathCommand::MovetoLower),
                     SVGPathCSTNode::Number {
-                        raw_number: "0".to_string(),
+                        raw_number: "0".into(),
                         value: 0.0,
                         start: 1,
                         end: 2,
@@ -1329,7 +1309,7 @@ fn arc_with_flags_together() {
                         end: 3,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "0".to_string(),
+                        raw_number: "0".into(),
                         value: 0.0,
                         start: 3,
                         end: 4,
@@ -1347,7 +1327,7 @@ fn arc_with_flags_together() {
                 cst: vec![
                     SVGPathCSTNode::Command(&SVGPathCommand::ArcLower),
                     SVGPathCSTNode::Number {
-                        raw_number: "1.862".to_string(),
+                        raw_number: "1.862".into(),
                         value: 1.862,
                         start: 5,
                         end: 10,
@@ -1358,7 +1338,7 @@ fn arc_with_flags_together() {
                         end: 11,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "1.862".to_string(),
+                        raw_number: "1.862".into(),
                         value: 1.862,
                         start: 11,
                         end: 16,
@@ -1369,7 +1349,7 @@ fn arc_with_flags_together() {
                         end: 17,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "0".to_string(),
+                        raw_number: "0".into(),
                         value: 0.0,
                         start: 17,
                         end: 18,
@@ -1380,13 +1360,13 @@ fn arc_with_flags_together() {
                         end: 19,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "0".to_string(),
+                        raw_number: "0".into(),
                         value: 0.0,
                         start: 19,
                         end: 20,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: "0".to_string(),
+                        raw_number: "0".into(),
                         value: 0.0,
                         start: 20,
                         end: 21,
@@ -1396,13 +1376,13 @@ fn arc_with_flags_together() {
                         start: 21,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: ".248".to_string(),
+                        raw_number: ".248".into(),
                         value: 0.248,
                         start: 22,
                         end: 26,
                     },
                     SVGPathCSTNode::Number {
-                        raw_number: ".033".to_string(),
+                        raw_number: ".033".into(),
                         value: 0.033,
                         start: 26,
                         end: 30,
@@ -1414,25 +1394,38 @@ fn arc_with_flags_together() {
                 chain_start: 4,
                 chain_end: 30,
             }),
-        ]
+        ],
     );
 }
 
 #[test]
 fn invalid_utf8_length_1() {
-    assert_svg_path_cst_err!(
+    assert_svg_path_cst_err(
         b"m0 0\xE1", // \xE1 is á
         SyntaxError::InvalidCharacter {
             character: 'á',
             index: 4,
-            expected: "number or command".to_string()
+            expected: "number or command",
+        },
+    );
+}
+
+#[test]
+fn invalid_path_ending() {
+    // https://github.com/simple-icons/simple-icons/pull/11053
+    assert_svg_path_cst_err(
+        b"m2.249 8.801a2.6 2.6 0 0 1-2.6 2.6 2.6 2.6 0 0 1-2.6-2.6 2.6 2.6 0 0 1 2.6-2.6 2.6 2.6 0 0 1 2.6 2.6z55",
+        SyntaxError::InvalidCharacter {
+            character: '5',
+            index: 101,
+            expected: "command",
         }
     );
 }
 
 #[test]
 fn simple_icons_icon_path() {
-    let cst = svg_path_cst(include_bytes!("../fuzz/corpus/simpleicons.txt"));
+    let cst = svg_path_cst(include_bytes!("../../fuzz/corpus/simpleicons.txt"));
     assert!(cst.is_ok());
     assert_eq!(cst.unwrap().len(), 46);
 }

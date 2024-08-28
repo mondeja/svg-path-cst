@@ -7,6 +7,25 @@ repos:
           - --cache
           - --cache-location=.prettier-cache
           - --ignore-path=.gitignore
+  - repo: meta
+    hooks:
+      - id: check-hooks-apply
+        name: check-hooks-apply
+      - id: check-useless-excludes
+        name: check-useless-excludes
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        name: trailing-whitespace
+      - id: end-of-file-fixer
+        name: end-of-file-fixer
+        exclude: fuzz/
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.13.0
+    hooks:
+      - id: markdownlint-cli2
+        exclude: ^LICENSE\.md$
   - repo: https://github.com/doublify/pre-commit-rust
     rev: v1.0
     hooks:
@@ -36,6 +55,26 @@ repos:
         args:
           [
             --features=tracing,
+            --,
+            -D,
+            warnings,
+            -D,
+            clippy::perf,
+            -D,
+            clippy::print_stdout,
+            -D,
+            clippy::explicit_iter_loop,
+            -D,
+            clippy::uninlined_format_args,
+            -D,
+            clippy::semicolon_if_nothing_returned,
+          ]
+      - id: clippy
+        alias: clippy-strict
+        name: clippy-strict
+        args:
+          [
+            --features=strict,
             --,
             -D,
             warnings,

@@ -42,6 +42,8 @@ jobs:
         features:
           - []
           - [tracing]
+          - [strict]
+          - [tracing, strict]
     steps:
       - uses: actions/checkout@v4
       - name: Setup Rust
@@ -53,13 +55,16 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}-${{ matrix.rust-toolchain }}-${{ join(matrix.features, ',') }}
-      - name: Run
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ matrix.rust-toolchain }}-${{ join(matrix.features, '-') }}
+      - name: Unit tests
         if: matrix.features[0] != null
         run: cargo test -p svg-path-cst --features ${{ join(matrix.features, ',') }}
-      - name: Run
+      - name: Unit tests
         if: matrix.features[0] == null
         run: cargo test -p svg-path-cst
+      - name: Integration tests
+        if: matrix.os != 'windows-latest'
+        run: sh src/tests/integration.sh
 
   test-release-crate:
     name: Test crate release

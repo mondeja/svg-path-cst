@@ -96,10 +96,29 @@ assert_eq!(cst, Ok(expected_cst));
 
 ## Compatibility
 
-This crate is compatible with SVG v1.1 paths, as defined in the [W3C SVG 1.1](https://www.w3.org/TR/SVG11/paths.html#PathData) and [`no_std` environments](https://docs.rust-embedded.org/book/intro/no-std.html).
+This crate is compatible with SVG v1.1 paths, as defined in the [W3C SVG 1.1]
+and [`no_std` environments].
 
 ## Features
 
-- **`tracing`**: Adds [`tracing`] support.
+### **`tracing`**
 
+Add [`tracing`] support. See the [`tracing` example] to learn how to use it.
+
+### **`strict`**
+
+Enable strict mode. The differences between strict and non-strict modes are:
+
+- With empty input (`b""`), non-strict mode returns an empty vector, while
+  strict mode returns a `SyntaxError::UnexpectedEnding` error.
+- With the input `b"none"`, non-strict mode returns a `SVGPathCSTNode::None`
+  node, while strict mode returns a `SyntaxError::ExpectedMovetoCommand` error.
+  The `"none"` input is defined
+  [by the SVG specification](https://www.w3.org/TR/SVG/paths.html#TheDProperty).
+- With input containing only whitespaces, non-strict mode returns an empty vector,
+  while strict mode returns a `SyntaxError::ExpectedMovetoCommand` error.
+
+[W3C SVG 1.1]: https://www.w3.org/TR/SVG11/paths.html#PathData
+[`no_std` environments]: https://docs.rust-embedded.org/book/intro/no-std.html
 [`tracing`]: https://docs.rs/tracing/latest/tracing
+[`tracing` example]: https://github.com/mondeja/svg-path-cst/tree/master/examples/tracing
