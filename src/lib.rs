@@ -1,11 +1,12 @@
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 #![doc(test(attr(deny(warnings))))]
-#![no_std]
+#![cfg_attr(not(test), no_std)]
 
 extern crate alloc;
 use crate::alloc::{
     string::{String, ToString},
+    vec,
     vec::Vec,
 };
 
@@ -13,7 +14,7 @@ use crate::alloc::{
 ::doc_comment::doctest!("../README.md");
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
 
 mod errors;
 pub use errors::SyntaxError;
@@ -142,6 +143,8 @@ impl SVGPathCommand {
 /// according to the SVG Path v1.1 specification.
 ///
 /// ```
+/// # // Don't test this in strict mode because it would fail
+/// # #[cfg(not(feature = "strict"))] {
 /// use svg_path_cst::{svg_path_cst, SVGPathCSTNode, WSP};
 ///
 /// let cst = svg_path_cst(b" \t\n\r \x0C");
@@ -189,6 +192,7 @@ impl SVGPathCommand {
 ///         _ => (),
 ///     }
 /// }
+/// # }
 /// ```
 #[derive(Debug, PartialEq, Clone, Copy)]
 #[repr(u8)]
@@ -461,17 +465,20 @@ impl<'a> Parser<'a> {
         Some(self.path[self.index])
     }
 
-    fn check_unexpected_end(&mut self, expected: &str) -> Result<(), SyntaxError> {
+    fn check_unexpected_end(
+        &mut self,
+        expected: &'static str,
+    ) -> Result<(), SyntaxError> {
         if self.peek().is_none() {
             return Err(SyntaxError::UnexpectedEnding {
                 index: self.index - 1,
-                expected: expected.to_string(),
+                expected,
             });
         }
         Ok(())
     }
 
-    #[cfg_attr(feature = "tracing", tracing::instrument(level = "trace", skip(self)))]
+    #[cfg_attr(feature = "tracing", tracing::instrument(level = "trace", skip_all))]
     fn parse_whitespaces(&mut self, nodes: &mut Vec<SVGPathCSTNode>) {
         while let Some(next) = self.peek() {
             match next {
@@ -522,7 +529,7 @@ impl<'a> Parser<'a> {
 
     #[cfg_attr(
         feature = "tracing",
-        tracing::instrument(level = "trace", skip(self), err(Debug))
+        tracing::instrument(level = "trace", skip_all, err(Debug))
     )]
     fn parse_comma_wsp(
         &mut self,
@@ -546,7 +553,7 @@ impl<'a> Parser<'a> {
         } else {
             return Err(SyntaxError::UnexpectedEnding {
                 index: self.index - 1,
-                expected: "comma or whitespace".to_string(),
+                expected: "comma or whitespace",
             });
         }
 
@@ -555,7 +562,7 @@ impl<'a> Parser<'a> {
 
     #[cfg_attr(
         feature = "tracing",
-        tracing::instrument(level = "trace", skip(self), err(Debug))
+        tracing::instrument(level = "trace", skip_all, err(Debug))
     )]
     fn parse_number(&mut self) -> Result<SVGPathCSTNode, SyntaxError> {
         let start = self.index;
@@ -615,7 +622,7 @@ impl<'a> Parser<'a> {
                         return Err(SyntaxError::InvalidCharacter {
                             character: next as char,
                             index: self.index - 1,
-                            expected: "number or command".to_string(),
+                            expected: "number or command",
                         });
                     } else if !has_digit {
                         number.push(next);
@@ -654,7 +661,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    #[cfg_attr(feature = "tracing", tracing::instrument(level = "trace", skip(self)))]
+    #[cfg_attr(feature = "tracing", tracing::instrument(level = "trace", skip_all))]
     fn parse_sign(&mut self) -> Option<SVGPathCSTNode> {
         match self.peek() {
             Some(b'+') => {
@@ -677,7 +684,7 @@ impl<'a> Parser<'a> {
 
     #[cfg_attr(
         feature = "tracing",
-        tracing::instrument(level = "trace", skip(self), err(Debug))
+        tracing::instrument(level = "trace", skip_all, err(Debug))
     )]
     fn parse_flag(&mut self, command: u8) -> Result<f64, SyntaxError> {
         match self.next() {
@@ -690,14 +697,14 @@ impl<'a> Parser<'a> {
             }),
             None => Err(SyntaxError::UnexpectedEnding {
                 index: self.index,
-                expected: "flag (0 or 1)".to_string(),
+                expected: "flag (0 or 1)",
             }),
         }
     }
 
     #[cfg_attr(
         feature = "tracing",
-        tracing::instrument(level = "trace", skip(self), err(Debug))
+        tracing::instrument(level = "trace", skip_all, err(Debug))
     )]
     fn parse_coordinate(&mut self) -> Result<Coordinate, SyntaxError> {
         let sign_node = self.parse_sign();
@@ -710,7 +717,7 @@ impl<'a> Parser<'a> {
         else {
             Err(SyntaxError::UnexpectedEnding {
                 index: self.index - 1,
-                expected: "number".to_string(),
+                expected: "number",
             })?
         };
 
@@ -737,7 +744,7 @@ impl<'a> Parser<'a> {
 
     #[cfg_attr(
         feature = "tracing",
-        tracing::instrument(level = "trace", skip(self), err(Debug))
+        tracing::instrument(level = "trace", skip_all, err(Debug))
     )]
     fn parse_coordinate_pair(
         &mut self,
@@ -763,7 +770,7 @@ impl<'a> Parser<'a> {
 
     #[cfg_attr(
         feature = "tracing",
-        tracing::instrument(level = "trace", skip(self), err(Debug))
+        tracing::instrument(level = "trace", skip_all, err(Debug))
     )]
     fn parse_two_operands_command(
         &mut self,
@@ -808,7 +815,7 @@ impl<'a> Parser<'a> {
 
     #[cfg_attr(
         feature = "tracing",
-        tracing::instrument(level = "trace", skip(self), err(Debug))
+        tracing::instrument(level = "trace", skip_all, err(Debug))
     )]
     fn parse_four_operands_command(
         &mut self,
@@ -861,7 +868,7 @@ impl<'a> Parser<'a> {
 
     #[cfg_attr(
         feature = "tracing",
-        tracing::instrument(level = "trace", skip(self), err(Debug))
+        tracing::instrument(level = "trace", skip_all, err(Debug))
     )]
     fn parse_curveto(
         &mut self,
@@ -924,7 +931,7 @@ impl<'a> Parser<'a> {
 
     #[cfg_attr(
         feature = "tracing",
-        tracing::instrument(level = "trace", skip(self), err(Debug))
+        tracing::instrument(level = "trace", skip_all, err(Debug))
     )]
     fn parse_arc(
         &mut self,
@@ -1086,18 +1093,25 @@ impl<'a> Parser<'a> {
         Ok(cst)
     }
 
-    #[cfg_attr(feature = "tracing", tracing::instrument(level = "trace", skip(self)))]
+    #[cfg_attr(feature = "tracing", tracing::instrument(level = "trace", skip_all))]
     fn parse_closepath(&mut self, command: &'static SVGPathCommand) -> SVGPathCSTNode {
-        let mut segment = new_segment(command, self.index - 1, false);
-        segment.end = self.index;
-        segment.chain_end = self.index;
-        segment.cst.push(SVGPathCSTNode::Command(command));
-        SVGPathCSTNode::Segment(segment)
+        let start = self.index - 1;
+        let end = self.index;
+        SVGPathCSTNode::Segment(SVGPathSegment {
+            command,
+            args: Vec::with_capacity(0),
+            cst: vec![SVGPathCSTNode::Command(command); 1],
+            start,
+            end,
+            chained: false,
+            chain_start: start,
+            chain_end: end,
+        })
     }
 
     #[cfg_attr(
         feature = "tracing",
-        tracing::instrument(level = "trace", skip(self), err(Debug))
+        tracing::instrument(level = "trace", skip_all, err(Debug))
     )]
     fn parse_horizontal_or_vertical(
         &mut self,
@@ -1152,179 +1166,177 @@ impl<'a> Parser<'a> {
 
     #[cfg_attr(
         feature = "tracing",
-        tracing::instrument(level = "trace", skip(self), err(Debug))
-    )]
-    fn parse_drawto(
-        &mut self,
-        command: u8,
-        nodes: &mut Vec<SVGPathCSTNode>,
-    ) -> Result<(), SyntaxError> {
-        match command {
-            b'm' => {
-                nodes.extend(
-                    self.parse_two_operands_command(&SVGPathCommand::MovetoLower)?,
-                );
-                Ok(())
-            }
-            b'M' => {
-                nodes.extend(
-                    self.parse_two_operands_command(&SVGPathCommand::MovetoUpper)?,
-                );
-                Ok(())
-            }
-            b'l' => {
-                nodes.extend(
-                    self.parse_two_operands_command(&SVGPathCommand::LinetoLower)?,
-                );
-                Ok(())
-            }
-            b'L' => {
-                nodes.extend(
-                    self.parse_two_operands_command(&SVGPathCommand::LinetoUpper)?,
-                );
-                Ok(())
-            }
-            b'h' => {
-                nodes.extend(
-                    self.parse_horizontal_or_vertical(
-                        &SVGPathCommand::HorizontalLower,
-                    )?,
-                );
-                Ok(())
-            }
-            b'H' => {
-                nodes.extend(
-                    self.parse_horizontal_or_vertical(
-                        &SVGPathCommand::HorizontalUpper,
-                    )?,
-                );
-                Ok(())
-            }
-            b'v' => {
-                nodes.extend(
-                    self.parse_horizontal_or_vertical(&SVGPathCommand::VerticalLower)?,
-                );
-                Ok(())
-            }
-            b'V' => {
-                nodes.extend(
-                    self.parse_horizontal_or_vertical(&SVGPathCommand::VerticalUpper)?,
-                );
-                Ok(())
-            }
-            b'z' => {
-                nodes.push(self.parse_closepath(&SVGPathCommand::ClosepathLower));
-                Ok(())
-            }
-            b'Z' => {
-                nodes.push(self.parse_closepath(&SVGPathCommand::ClosepathUpper));
-                Ok(())
-            }
-            b'c' => {
-                nodes.extend(self.parse_curveto(&SVGPathCommand::CurvetoLower)?);
-                Ok(())
-            }
-            b'C' => {
-                nodes.extend(self.parse_curveto(&SVGPathCommand::CurvetoUpper)?);
-                Ok(())
-            }
-            b'q' => {
-                nodes.extend(
-                    self.parse_four_operands_command(&SVGPathCommand::QuadraticLower)?,
-                );
-                Ok(())
-            }
-            b'Q' => {
-                nodes.extend(
-                    self.parse_four_operands_command(&SVGPathCommand::QuadraticUpper)?,
-                );
-                Ok(())
-            }
-            b's' => {
-                nodes.extend(self.parse_four_operands_command(
-                    &SVGPathCommand::SmoothCurvetoLower,
-                )?);
-                Ok(())
-            }
-            b'S' => {
-                nodes.extend(self.parse_four_operands_command(
-                    &SVGPathCommand::SmoothCurvetoUpper,
-                )?);
-                Ok(())
-            }
-            b'a' => {
-                nodes.extend(self.parse_arc(&SVGPathCommand::ArcLower)?);
-                Ok(())
-            }
-            b'A' => {
-                nodes.extend(self.parse_arc(&SVGPathCommand::ArcUpper)?);
-                Ok(())
-            }
-            b't' => {
-                nodes.extend(self.parse_two_operands_command(
-                    &SVGPathCommand::SmoothQuadraticLower,
-                )?);
-                Ok(())
-            }
-            b'T' => {
-                nodes.extend(self.parse_two_operands_command(
-                    &SVGPathCommand::SmoothQuadraticUpper,
-                )?);
-                Ok(())
-            }
-            _ => Err(SyntaxError::InvalidCharacter {
-                character: command as char,
-                index: self.index - 1,
-                expected: "command".to_string(),
-            }),
-        }
-    }
-
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(level = "trace", skip(self), err(Debug))
+        tracing::instrument(level = "trace", skip_all, err(Debug))
     )]
     pub fn parse(&mut self) -> Result<Vec<SVGPathCSTNode>, SyntaxError> {
         if self.path.is_empty() {
             #[cfg(feature = "tracing")]
             tracing::trace!("Empty SVG path");
+
+            #[cfg(feature = "strict")]
+            return Err(SyntaxError::UnexpectedEnding {
+                expected: "moveto command",
+                index: 0,
+            });
+
+            #[cfg(not(feature = "strict"))]
             return Ok(Vec::new());
         }
+
         if self.path == b"none" {
             #[cfg(feature = "tracing")]
             tracing::trace!("SVG path with 'none' value");
+
+            #[cfg(feature = "strict")]
+            return Err(SyntaxError::ExpectedMovetoCommand {
+                character: 'n',
+                index: 0,
+            });
+
+            #[cfg(not(feature = "strict"))]
             return Ok(Vec::from([SVGPathCSTNode::None]));
         }
 
-        let mut cst = Vec::new();
-        self.parse_whitespaces(&mut cst);
+        let mut nodes = Vec::with_capacity(self.path.len() / 4);
+        self.parse_whitespaces(&mut nodes);
         let next = self.next().unwrap_or(b' ');
         match next {
             b'm' | b'M' => {
-                for node in self.parse_two_operands_command(match next {
+                nodes.extend(self.parse_two_operands_command(match next {
                     b'm' => &SVGPathCommand::MovetoLower,
                     _ => &SVGPathCommand::MovetoUpper,
-                })? {
-                    cst.push(node);
-                }
-                self.parse_whitespaces(&mut cst);
+                })?);
+                self.parse_whitespaces(&mut nodes);
                 while let Some(next) = self.next() {
-                    self.parse_drawto(next, &mut cst)?;
-                    self.parse_whitespaces(&mut cst);
+                    match next {
+                        b'm' => {
+                            nodes.extend(self.parse_two_operands_command(
+                                &SVGPathCommand::MovetoLower,
+                            )?);
+                        }
+                        b'M' => {
+                            nodes.extend(self.parse_two_operands_command(
+                                &SVGPathCommand::MovetoUpper,
+                            )?);
+                        }
+                        b'l' => {
+                            nodes.extend(self.parse_two_operands_command(
+                                &SVGPathCommand::LinetoLower,
+                            )?);
+                        }
+                        b'L' => {
+                            nodes.extend(self.parse_two_operands_command(
+                                &SVGPathCommand::LinetoUpper,
+                            )?);
+                        }
+                        b'h' => {
+                            nodes.extend(self.parse_horizontal_or_vertical(
+                                &SVGPathCommand::HorizontalLower,
+                            )?);
+                        }
+                        b'H' => {
+                            nodes.extend(self.parse_horizontal_or_vertical(
+                                &SVGPathCommand::HorizontalUpper,
+                            )?);
+                        }
+                        b'v' => {
+                            nodes.extend(self.parse_horizontal_or_vertical(
+                                &SVGPathCommand::VerticalLower,
+                            )?);
+                        }
+                        b'V' => {
+                            nodes.extend(self.parse_horizontal_or_vertical(
+                                &SVGPathCommand::VerticalUpper,
+                            )?);
+                        }
+                        b'z' => {
+                            nodes.push(
+                                self.parse_closepath(&SVGPathCommand::ClosepathLower),
+                            );
+                        }
+                        b'Z' => {
+                            nodes.push(
+                                self.parse_closepath(&SVGPathCommand::ClosepathUpper),
+                            );
+                        }
+                        b'c' => {
+                            nodes.extend(
+                                self.parse_curveto(&SVGPathCommand::CurvetoLower)?,
+                            );
+                        }
+                        b'C' => {
+                            nodes.extend(
+                                self.parse_curveto(&SVGPathCommand::CurvetoUpper)?,
+                            );
+                        }
+                        b'q' => {
+                            nodes.extend(self.parse_four_operands_command(
+                                &SVGPathCommand::QuadraticLower,
+                            )?);
+                        }
+                        b'Q' => {
+                            nodes.extend(self.parse_four_operands_command(
+                                &SVGPathCommand::QuadraticUpper,
+                            )?);
+                        }
+                        b's' => {
+                            nodes.extend(self.parse_four_operands_command(
+                                &SVGPathCommand::SmoothCurvetoLower,
+                            )?);
+                        }
+                        b'S' => {
+                            nodes.extend(self.parse_four_operands_command(
+                                &SVGPathCommand::SmoothCurvetoUpper,
+                            )?);
+                        }
+                        b'a' => {
+                            nodes.extend(self.parse_arc(&SVGPathCommand::ArcLower)?);
+                        }
+                        b'A' => {
+                            nodes.extend(self.parse_arc(&SVGPathCommand::ArcUpper)?);
+                        }
+                        b't' => {
+                            nodes.extend(self.parse_two_operands_command(
+                                &SVGPathCommand::SmoothQuadraticLower,
+                            )?);
+                        }
+                        b'T' => {
+                            nodes.extend(self.parse_two_operands_command(
+                                &SVGPathCommand::SmoothQuadraticUpper,
+                            )?);
+                        }
+                        _ => {
+                            return Err(SyntaxError::InvalidCharacter {
+                                character: next as char,
+                                index: self.index - 1,
+                                expected: "command",
+                            })
+                        }
+                    }
+                    self.parse_whitespaces(&mut nodes);
                 }
             }
-            b' ' => (),
+            b' ' => {
+                #[cfg(all(feature = "tracing", feature = "strict"))]
+                tracing::trace!("Empty SVG path");
+
+                #[cfg(feature = "strict")]
+                return Err(SyntaxError::ExpectedMovetoCommand {
+                    character: self.path[0] as char,
+                    index: 0,
+                });
+            }
             _ => {
                 #[cfg(feature = "tracing")]
                 tracing::trace!("Expected moveto command, found '{}'", next as char);
                 return Err(SyntaxError::ExpectedMovetoCommand {
-                    command: next as char,
+                    character: next as char,
                     index: self.index - 1,
                 });
             }
         }
 
-        Ok(cst)
+        Ok(nodes)
     }
 }
 
@@ -1343,7 +1355,7 @@ impl<'a> Parser<'a> {
 ///     Err(SVGPathSyntaxError::InvalidCharacter {
 ///         character: '!',
 ///         index: 6,
-///         expected: "number or command".to_string(),
+///         expected: "number or command",
 ///     })
 /// );
 ///
@@ -1355,7 +1367,7 @@ impl<'a> Parser<'a> {
 #[cfg_attr(feature = "tracing", tracing::instrument(level = "trace", skip_all))]
 pub fn svg_path_cst(path: &[u8]) -> Result<Vec<SVGPathCSTNode>, SyntaxError> {
     #[cfg(feature = "tracing")]
-    tracing::info!("Parsing SVG path: {:?}", path);
+    tracing::trace!("{:?}", &path.iter().map(|&c| c as char).collect::<String>());
     let mut parser = Parser::new(path);
     parser.parse()
 }

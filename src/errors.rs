@@ -8,11 +8,11 @@ use snafu::prelude::*;
 pub enum SyntaxError {
     /// The first command in a path is not moveto.
     #[snafu(display(
-        "Invalid SVG path command '{command}' at index {index}, expected 'M' or 'm'"
+        "Invalid SVG path command '{character}' at index {index}, expected 'M' or 'm'"
     ))]
     ExpectedMovetoCommand {
         /// Command letter found
-        command: char,
+        character: char,
         /// Index of the command in the path
         index: usize,
     },
@@ -38,7 +38,7 @@ pub enum SyntaxError {
         /// Index of the character in the path
         index: usize,
         /// Expected character
-        expected: String,
+        expected: &'static str,
     },
 
     /// Invalid path ending.
@@ -47,7 +47,7 @@ pub enum SyntaxError {
         /// Index of the end of the path
         index: usize,
         /// Expected token
-        expected: String,
+        expected: &'static str,
     },
 
     /// Invalid SVG quaractic arc command flag argument.

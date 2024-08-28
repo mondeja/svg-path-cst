@@ -1,6 +1,6 @@
 [package]
 name = "svg-path-cst"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 readme = "README.md"
 description = "CST SVG path parser."
@@ -18,15 +18,21 @@ path = "src/main.rs"
 
 [features]
 tracing = ["dep:tracing"]
+strict = []
 
 [dependencies]
 snafu = { version = "0.8", default-features = false }
-tracing = { version = "0.1", optional = true, default-features = false, features = ["attributes"]}
+tracing = { version = "0.1", optional = true, default-features = false, features = [
+  "attributes"
+] }
 
 [dev-dependencies]
-doc-comment = "0.3.3"
+doc-comment = "0.3"
 criterion = { version = "0.5", features = ["html_reports"] }
 
 [[bench]]
-name = "performance"
+name = "no_features"
 harness = false
+
+[workspace]
+members = [".", "examples/tracing"]

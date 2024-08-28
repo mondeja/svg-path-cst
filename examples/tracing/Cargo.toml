@@ -1,0 +1,13 @@
+[package]
+name = "tracing-example"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+svg-path-cst = { path = "../..", features = ["tracing"] }
+tracing = { version = "0.1", default-features = false }
+tracing-appender = "0.2"
+tracing-subscriber = { version = "0.3", default-features = false, features = [
+  "env-filter",
+  "ansi",
+] }
