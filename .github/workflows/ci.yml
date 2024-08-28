@@ -39,6 +39,9 @@ jobs:
           - ubuntu-latest
           - windows-latest
           - macos-latest
+        features:
+          - []
+          - [tracing]
     steps:
       - uses: actions/checkout@v4
       - name: Setup Rust
@@ -52,7 +55,7 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}-${{ matrix.rust-toolchain }}
       - name: Run
-        run: cargo test -p svg-path-cst
+        run: cargo test -p svg-path-cst --features ${{ join(matrix.features, ',') }}
 
   test-release-crate:
     name: Test crate release
