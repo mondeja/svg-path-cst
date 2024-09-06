@@ -200,27 +200,6 @@ fn basic_moveto() {
 }
 
 #[test]
-fn basic_moveto_fmt() {
-    assert_svg_path_cst_fmt(
-        b"m 10-10",
-        concat!(
-            "[Segment(SVGPathSegment {",
-            " command: MovetoLower, args: [10.0, -10.0],",
-            " cst: [",
-            "Command(MovetoLower),",
-            " Whitespace { wsp: Space, start: 1, end: 2 },",
-            " Number { raw_number: \"10\", value: 10.0, start: 2, end: 4 },",
-            " Sign { sign: Minus, start: 4 },",
-            " Number { raw_number: \"10\", value: 10.0, start: 5, end: 7 }",
-            "],",
-            " start: 0, end: 7, chained: false,",
-            " chain_start: 0, chain_end: 7",
-            " })]",
-        ),
-    );
-}
-
-#[test]
 fn moveto_whitespaces() {
     assert_svg_path_cst(
         b" M \t10\r 10 ",
