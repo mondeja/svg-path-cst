@@ -19,11 +19,23 @@ pub(crate) mod tests;
 mod errors;
 pub use errors::SyntaxError;
 
-static COMMAND_CHARACTERS: [u8; 20] = [
-    b'M', b'm', b'V', b'v', b'H', b'h', b'L', b'l', b'Z', b'z', b'C', b'c', b'S', b's',
-    b'Q', b'q', b'T', b't', b'A', b'a',
-];
-static WSP_COMMA_CHARACTERS: [u8; 6] = [b' ', b'\t', b'\n', b'\x0C', b'\r', b','];
+/// Checks if a character is a command character.
+///
+/// The previous implementation used a slice and `slice::contains()`, which
+/// was O(n). The current implementation is O(1), but is not exact because
+/// other characters like `b` and `B` are considered commands. Anyways,
+/// in the context that this function is used, the character raises a syntax
+/// error in the next iteration of the parser.
+#[inline]
+fn is_command(c: u8) -> bool {
+    let bitwise3 = c >> 3;
+    bitwise3 > 7 && bitwise3 < 16
+}
+
+#[inline]
+fn is_wsp_or_comma(c: u8) -> bool {
+    c == b' ' || c == b',' || c == b'\n' || c == b'\t' || c == b'\x0C' || c == b'\r'
+}
 
 // Sign, number and value
 type Coordinate = (Option<SVGPathCSTNode>, SVGPathCSTNode, f64);
@@ -531,7 +543,7 @@ impl<'a> Parser<'a> {
         feature = "tracing",
         tracing::instrument(level = "trace", skip_all, err(Debug))
     )]
-    fn parse_comma_wsp(
+    fn parse_mandatory_comma_wsp(
         &mut self,
         nodes: &mut Vec<SVGPathCSTNode>,
     ) -> Result<(), SyntaxError> {
@@ -558,6 +570,26 @@ impl<'a> Parser<'a> {
         }
 
         Ok(())
+    }
+
+    #[cfg_attr(feature = "tracing", tracing::instrument(level = "trace", skip_all))]
+    fn parse_comma_wsp(&mut self, nodes: &mut Vec<SVGPathCSTNode>) {
+        if let Some(next) = self.peek() {
+            if next == b',' {
+                nodes.push(SVGPathCSTNode::Comma { start: self.index });
+                self.index += 1;
+                self.parse_whitespaces(nodes);
+            } else {
+                self.parse_whitespaces(nodes);
+                if let Some(next_after_wsp) = self.peek() {
+                    if next_after_wsp == b',' {
+                        nodes.push(SVGPathCSTNode::Comma { start: self.index });
+                        self.index += 1;
+                        self.parse_whitespaces(nodes);
+                    }
+                }
+            }
+        }
     }
 
     #[cfg_attr(
@@ -616,9 +648,7 @@ impl<'a> Parser<'a> {
                     has_e = true;
                 }
                 _ => {
-                    if !WSP_COMMA_CHARACTERS.contains(&next)
-                        && !COMMAND_CHARACTERS.contains(&next)
-                    {
+                    if !is_command(next) && !is_wsp_or_comma(next) {
                         return Err(SyntaxError::InvalidCharacter {
                             character: next as char,
                             index: self.index - 1,
@@ -757,7 +787,7 @@ impl<'a> Parser<'a> {
         }
         nodes.push(first_number);
         values.push(first_value);
-        self.parse_comma_wsp(nodes)?;
+        self.parse_mandatory_comma_wsp(nodes)?;
         let (second_sign, second_number, second_value) = self.parse_coordinate()?;
         if let Some(sign) = second_sign {
             nodes.push(sign);
@@ -786,18 +816,18 @@ impl<'a> Parser<'a> {
 
         let mut next_nodes = Vec::new();
         self.parse_whitespaces(&mut next_nodes);
+        self.parse_comma_wsp(&mut first_segment.cst);
 
         if let Some(mut next) = self.peek() {
-            while !COMMAND_CHARACTERS.contains(&next) {
+            while !is_command(next) {
                 let mut segment = new_segment(command, self.index, true);
                 self.parse_coordinate_pair(&mut segment.cst, &mut segment.args)?;
                 first_segment.chain_end = self.index;
                 segment.end = self.index;
                 next_nodes.push(SVGPathCSTNode::Segment(segment));
+                self.parse_whitespaces(&mut next_nodes);
+                self.parse_comma_wsp(&mut next_nodes);
 
-                if self.parse_comma_wsp(&mut next_nodes).is_err() {
-                    break;
-                }
                 if let Some(n) = self.peek() {
                     next = n;
                 } else {
@@ -824,33 +854,40 @@ impl<'a> Parser<'a> {
         let mut first_segment = new_segment(command, self.index - 1, false);
         first_segment.cst.push(SVGPathCSTNode::Command(command));
 
-        for _ in 0..2 {
-            self.parse_whitespaces(&mut first_segment.cst);
-            self.check_unexpected_end("coordinate pair")?;
-            self.parse_coordinate_pair(
-                &mut first_segment.cst,
-                &mut first_segment.args,
-            )?;
-        }
+        // previously written as `for _ in 0..2` but unrolled
+        self.parse_whitespaces(&mut first_segment.cst);
+        self.parse_comma_wsp(&mut first_segment.cst);
+        self.check_unexpected_end("coordinate pair")?;
+        self.parse_coordinate_pair(&mut first_segment.cst, &mut first_segment.args)?;
+
+        self.parse_whitespaces(&mut first_segment.cst);
+        self.parse_comma_wsp(&mut first_segment.cst);
+        self.check_unexpected_end("coordinate pair")?;
+        self.parse_coordinate_pair(&mut first_segment.cst, &mut first_segment.args)?;
 
         first_segment.chain_end = self.index;
         first_segment.end = self.index;
 
         let mut next_nodes = Vec::new();
         self.parse_whitespaces(&mut next_nodes);
+        self.parse_comma_wsp(&mut next_nodes);
 
         if let Some(mut next) = self.peek() {
-            while !COMMAND_CHARACTERS.contains(&next) {
+            while !is_command(next) {
                 let mut segment = new_segment(command, self.index, true);
                 self.parse_coordinate_pair(&mut segment.cst, &mut segment.args)?;
                 self.parse_whitespaces(&mut segment.cst);
                 self.check_unexpected_end("coordinate pair")?;
+
+                self.parse_comma_wsp(&mut segment.cst);
 
                 self.parse_coordinate_pair(&mut segment.cst, &mut segment.args)?;
 
                 first_segment.chain_end = self.index;
                 segment.end = self.index;
                 next_nodes.push(SVGPathCSTNode::Segment(segment));
+                self.parse_whitespaces(&mut next_nodes);
+                self.parse_comma_wsp(&mut next_nodes);
                 if let Some(n) = self.peek() {
                     next = n;
                 } else {
@@ -883,10 +920,12 @@ impl<'a> Parser<'a> {
         self.check_unexpected_end("coordinate pair")?;
         self.parse_coordinate_pair(&mut first_segment.cst, &mut first_segment.args)?;
 
+        self.parse_comma_wsp(&mut first_segment.cst);
         self.parse_whitespaces(&mut first_segment.cst);
         self.check_unexpected_end("coordinate pair")?;
         self.parse_coordinate_pair(&mut first_segment.cst, &mut first_segment.args)?;
 
+        self.parse_comma_wsp(&mut first_segment.cst);
         self.parse_whitespaces(&mut first_segment.cst);
         self.check_unexpected_end("coordinate pair")?;
         self.parse_coordinate_pair(&mut first_segment.cst, &mut first_segment.args)?;
@@ -896,16 +935,19 @@ impl<'a> Parser<'a> {
 
         let mut next_nodes = Vec::new();
         self.parse_whitespaces(&mut next_nodes);
+        self.parse_comma_wsp(&mut first_segment.cst);
 
         if let Some(mut next) = self.peek() {
-            while !COMMAND_CHARACTERS.contains(&next) {
+            while !is_command(next) {
                 let mut segment = new_segment(command, self.index, true);
                 self.parse_coordinate_pair(&mut segment.cst, &mut segment.args)?;
                 self.parse_whitespaces(&mut segment.cst);
+                self.parse_comma_wsp(&mut segment.cst);
 
                 self.check_unexpected_end("coordinate pair")?;
                 self.parse_coordinate_pair(&mut segment.cst, &mut segment.args)?;
                 self.parse_whitespaces(&mut segment.cst);
+                self.parse_comma_wsp(&mut segment.cst);
 
                 self.check_unexpected_end("coordinate pair")?;
                 self.parse_coordinate_pair(&mut segment.cst, &mut segment.args)?;
@@ -914,6 +956,7 @@ impl<'a> Parser<'a> {
                 segment.end = self.index;
                 next_nodes.push(SVGPathCSTNode::Segment(segment));
                 self.parse_whitespaces(&mut next_nodes);
+                self.parse_comma_wsp(&mut next_nodes);
                 if let Some(n) = self.peek() {
                     next = n;
                 } else {
@@ -942,38 +985,10 @@ impl<'a> Parser<'a> {
         first_segment.cst.push(SVGPathCSTNode::Command(command));
         self.parse_whitespaces(&mut first_segment.cst);
 
-        // loop unrolling here, previously written as `for _ in 0..3`
-        // 0
+        // 0 - 1
         self.check_unexpected_end("number")?;
-        let index_before_parse_radius = self.index;
-        let (sign_node, number_node, value) = self.parse_coordinate()?;
-        if sign_node.is_some() || value > 360.0 {
-            return Err(SyntaxError::InvalidArcRadius {
-                start: index_before_parse_radius,
-                end: self.index,
-                value,
-                command: u8_command as char,
-            });
-        }
-        first_segment.args.push(value);
-        first_segment.cst.push(number_node);
-        self.parse_comma_wsp(&mut first_segment.cst)?;
-
-        // 1
-        self.check_unexpected_end("number")?;
-        let index_before_parse_radius = self.index;
-        let (sign_node, number_node, value) = self.parse_coordinate()?;
-        if sign_node.is_some() || value > 360.0 {
-            return Err(SyntaxError::InvalidArcRadius {
-                start: index_before_parse_radius,
-                end: self.index,
-                value,
-                command: u8_command as char,
-            });
-        }
-        first_segment.args.push(value);
-        first_segment.cst.push(number_node);
-        self.parse_comma_wsp(&mut first_segment.cst)?;
+        self.parse_coordinate_pair(&mut first_segment.cst, &mut first_segment.args)?;
+        self.parse_comma_wsp(&mut first_segment.cst);
 
         // 2
         self.check_unexpected_end("number")?;
@@ -989,7 +1004,7 @@ impl<'a> Parser<'a> {
         }
         first_segment.args.push(value);
         first_segment.cst.push(number_node);
-        self.parse_comma_wsp(&mut first_segment.cst)?;
+        self.parse_comma_wsp(&mut first_segment.cst);
 
         // loop unrolling here, previously written as `for _ in 0..2`
         // 0
@@ -1005,7 +1020,7 @@ impl<'a> Parser<'a> {
             start: self.index - 1,
             end: self.index,
         });
-        self.parse_comma_wsp(&mut first_segment.cst)?;
+        self.parse_comma_wsp(&mut first_segment.cst);
 
         // 1
         let value = self.parse_flag(u8_command)?;
@@ -1020,7 +1035,7 @@ impl<'a> Parser<'a> {
             start: self.index - 1,
             end: self.index,
         });
-        self.parse_comma_wsp(&mut first_segment.cst)?;
+        self.parse_comma_wsp(&mut first_segment.cst);
 
         self.parse_coordinate_pair(&mut first_segment.cst, &mut first_segment.args)?;
 
@@ -1029,48 +1044,66 @@ impl<'a> Parser<'a> {
 
         let mut next_nodes = Vec::new();
         self.parse_whitespaces(&mut next_nodes);
+        self.parse_comma_wsp(&mut next_nodes);
 
         if let Some(mut next) = self.peek() {
-            while !COMMAND_CHARACTERS.contains(&next) {
+            while !is_command(next) {
                 let mut segment = new_segment(command, self.index, true);
 
-                for _ in 0..3 {
-                    self.parse_whitespaces(&mut next_nodes);
-                    self.check_unexpected_end("number")?;
+                // 0 - 1
+                self.check_unexpected_end("number")?;
+                self.parse_coordinate_pair(&mut segment.cst, &mut segment.args)?;
+                self.parse_comma_wsp(&mut segment.cst);
 
-                    let index_before_parse_radius = self.index;
-                    let (sign_node, number_node, value) = self.parse_coordinate()?;
-                    if sign_node.is_some() || value > 360.0 {
-                        return Err(SyntaxError::InvalidArcRadius {
-                            start: index_before_parse_radius,
-                            end: self.index,
-                            value,
-                            command: u8_command as char,
-                        });
-                    }
+                self.parse_whitespaces(&mut next_nodes);
 
-                    segment.args.push(value);
-                    segment.cst.push(number_node);
-                    self.parse_comma_wsp(&mut segment.cst)?;
-                }
-
-                for _ in 0..2 {
-                    self.parse_whitespaces(&mut next_nodes);
-
-                    let value = self.parse_flag(u8_command)?;
-                    segment.args.push(value);
-                    segment.cst.push(SVGPathCSTNode::Number {
-                        raw_number: if value == 0.0 {
-                            "0".to_string()
-                        } else {
-                            "1".to_string()
-                        },
-                        value,
-                        start: self.index - 1,
+                // 2
+                self.check_unexpected_end("number")?;
+                let index_before_parse_radius = self.index;
+                let (sign_node, number_node, value) = self.parse_coordinate()?;
+                if sign_node.is_some() || value > 360.0 {
+                    return Err(SyntaxError::InvalidArcRadius {
+                        start: index_before_parse_radius,
                         end: self.index,
+                        value,
+                        command: u8_command as char,
                     });
-                    self.parse_comma_wsp(&mut segment.cst)?;
                 }
+
+                segment.args.push(value);
+                segment.cst.push(number_node);
+                self.parse_comma_wsp(&mut segment.cst);
+
+                self.parse_whitespaces(&mut next_nodes);
+
+                // 3 - 4
+                let value = self.parse_flag(u8_command)?;
+                segment.args.push(value);
+                segment.cst.push(SVGPathCSTNode::Number {
+                    raw_number: if value == 0.0 {
+                        "0".to_string()
+                    } else {
+                        "1".to_string()
+                    },
+                    value,
+                    start: self.index - 1,
+                    end: self.index,
+                });
+                self.parse_comma_wsp(&mut segment.cst);
+
+                let value = self.parse_flag(u8_command)?;
+                segment.args.push(value);
+                segment.cst.push(SVGPathCSTNode::Number {
+                    raw_number: if value == 0.0 {
+                        "0".to_string()
+                    } else {
+                        "1".to_string()
+                    },
+                    value,
+                    start: self.index - 1,
+                    end: self.index,
+                });
+                self.parse_comma_wsp(&mut segment.cst);
 
                 self.check_unexpected_end("coordinate pair")?;
                 self.parse_coordinate_pair(&mut segment.cst, &mut segment.args)?;
@@ -1078,6 +1111,9 @@ impl<'a> Parser<'a> {
                 first_segment.chain_end = self.index;
                 segment.end = self.index;
                 next_nodes.push(SVGPathCSTNode::Segment(segment));
+                self.parse_whitespaces(&mut next_nodes);
+                self.parse_comma_wsp(&mut next_nodes);
+
                 if let Some(n) = self.peek() {
                     next = n;
                 } else {
@@ -1134,7 +1170,7 @@ impl<'a> Parser<'a> {
         self.parse_whitespaces(&mut next_nodes);
 
         if let Some(mut next) = self.peek() {
-            while !COMMAND_CHARACTERS.contains(&next) {
+            while !is_command(next) {
                 let mut segment = new_segment(command, self.index, true);
                 let (sign, number, value) = self.parse_coordinate()?;
                 segment.end = self.index;
@@ -1146,9 +1182,6 @@ impl<'a> Parser<'a> {
                 }
                 next_nodes.push(SVGPathCSTNode::Segment(segment));
 
-                if self.parse_comma_wsp(&mut next_nodes).is_err() {
-                    break;
-                }
                 if let Some(n) = self.peek() {
                     next = n;
                 } else {
@@ -1368,6 +1401,7 @@ impl<'a> Parser<'a> {
 pub fn svg_path_cst(path: &[u8]) -> Result<Vec<SVGPathCSTNode>, SyntaxError> {
     #[cfg(feature = "tracing")]
     tracing::trace!("{:?}", &path.iter().map(|&c| c as char).collect::<String>());
+
     let mut parser = Parser::new(path);
     parser.parse()
 }
