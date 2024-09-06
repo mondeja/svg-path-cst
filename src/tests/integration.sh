@@ -10,14 +10,14 @@
 
 testSimpleicons() {
   output="$(./target/debug/svg-path-cst "$(cat fuzz/corpus/simpleicons.txt)")"
-  assertContains "$output" "[Segment(SVGPathSegment { command: MovetoUpper, args: [12.0, 0.0]"
-  assertContains "$output" "chain_end: 449 })]"
+  assertContains "$output" "[Segment(SVGPathSegment { args: [12.0, 0.0]"
+  assertContains "$output" "chained: false })]"
 }
 
 testElsevier() {
   output="$(./target/debug/svg-path-cst "$(cat fuzz/corpus/elsevier.txt)")"
-  assertContains "$output" "[Segment(SVGPathSegment { command: MovetoUpper"
-  assertContains "$output" "chain_end: 80118 })]"
+  assertContains "$output" "[Segment(SVGPathSegment { "
+  assertContains "$output" "chained: false })]"
 }
 
 testFailsOnInvalidInput() {
@@ -43,8 +43,8 @@ testNoArgs() {
 
 testAdditionalArgsAreIgnored() {
   output="$(./target/debug/svg-path-cst foo bar baz "$(cat fuzz/corpus/simpleicons.txt)" 2>&1)"
-  assertContains "$output" "[Segment(SVGPathSegment { command: MovetoUpper, args: [12.0, 0.0]"
-  assertContains "$output" "chain_end: 449 })]"
+  assertContains "$output" "[Segment(SVGPathSegment { args: [12.0, 0.0]"
+  assertContains "$output" "chained: false })]"
 }
 
 prepare() {

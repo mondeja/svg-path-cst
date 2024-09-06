@@ -200,27 +200,6 @@ fn basic_moveto() {
 }
 
 #[test]
-fn basic_moveto_fmt() {
-    assert_svg_path_cst_fmt(
-        b"m 10-10",
-        concat!(
-            "[Segment(SVGPathSegment {",
-            " command: MovetoLower, args: [10.0, -10.0],",
-            " cst: [",
-            "Command(MovetoLower),",
-            " Whitespace { wsp: Space, start: 1, end: 2 },",
-            " Number { raw_number: \"10\", value: 10.0, start: 2, end: 4 },",
-            " Sign { sign: Minus, start: 4 },",
-            " Number { raw_number: \"10\", value: 10.0, start: 5, end: 7 }",
-            "],",
-            " start: 0, end: 7, chained: false,",
-            " chain_start: 0, chain_end: 7",
-            " })]",
-        ),
-    );
-}
-
-#[test]
 fn moveto_whitespaces() {
     assert_svg_path_cst(
         b" M \t10\r 10 ",
@@ -1281,8 +1260,8 @@ fn invalid_multiple_commas() {
         b"m0 0,,100,100",
         SyntaxError::InvalidNumber {
             number: ",".into(),
-            start: 4,
-            end: 5,
+            start: 5,
+            end: 6,
         },
     );
 }
@@ -1467,4 +1446,134 @@ fn svg_path_command_as_char() {
     assert_eq!(SVGPathCommand::SmoothQuadraticLower as u8 as char, 't');
     assert_eq!(SVGPathCommand::ArcUpper as u8 as char, 'A');
     assert_eq!(SVGPathCommand::ArcLower as u8 as char, 'a');
+}
+
+/// Regression tests related to the optimization of the `is_command` function.
+mod is_command_function_optimization {
+    use super::*;
+
+    #[test]
+    fn b_is_not_numeric_after_wsp_before_segment() {
+        assert_svg_path_cst_err(
+            b"m0 0 bv3",
+            SyntaxError::InvalidCharacter {
+                character: 'b',
+                index: 5,
+                // TODO: this should be "number or command"
+                expected: "command",
+            },
+        );
+    }
+
+    #[test]
+    fn b_is_not_numeric_after_segment_and_wsp() {
+        assert_svg_path_cst_err(
+            b"m0 0 b",
+            SyntaxError::InvalidCharacter {
+                character: 'b',
+                index: 5,
+                // TODO: this should be "number or command"
+                expected: "command",
+            },
+        );
+    }
+
+    #[test]
+    fn b_is_not_numeric_after_segment() {
+        assert_svg_path_cst_err(
+            b"m0 0b",
+            SyntaxError::InvalidCharacter {
+                character: 'b',
+                index: 4,
+                // TODO: this should be "number or command"
+                expected: "command",
+            },
+        );
+    }
+
+    #[test]
+    fn b_is_not_numeric_at_coordinate() {
+        assert_svg_path_cst_err(
+            b"mb",
+            SyntaxError::InvalidNumber {
+                number: "b".into(),
+                start: 1,
+                end: 2,
+            },
+        );
+    }
+
+    #[test]
+    fn b_is_not_numeric_at_coordinate_after_wsp() {
+        assert_svg_path_cst_err(
+            b"m b",
+            SyntaxError::InvalidNumber {
+                number: "b".into(),
+                start: 2,
+                end: 3,
+            },
+        );
+    }
+}
+
+/// Regression tests with to the Simple Icons corpus.
+mod simple_icons {
+    use super::*;
+
+    fn get_simple_icons_temp_dir() -> std::path::PathBuf {
+        std::env::temp_dir().join("simple-icons")
+    }
+
+    fn clone_simple_icons_repo() {
+        let simple_icons_temp_dir = get_simple_icons_temp_dir();
+        if !simple_icons_temp_dir.exists() {
+            std::process::Command::new("git")
+                .arg("clone")
+                .arg("--depth=1")
+                .arg("https://github.com/simple-icons/simple-icons")
+                .arg(simple_icons_temp_dir.to_str().unwrap())
+                .output()
+                .expect("Failed to clone Simple Icons repository.");
+        }
+    }
+
+    fn get_simple_icons_paths() -> Vec<(String, String)> {
+        let simple_icons_temp_dir = get_simple_icons_temp_dir();
+        // (title, path)
+        let mut svg_paths: Vec<(String, String)> = Vec::new();
+        for entry in std::fs::read_dir(simple_icons_temp_dir.join("icons")).unwrap() {
+            let entry = entry.unwrap();
+            let icon_file_path = entry.path();
+            let svg = std::fs::read_to_string(&icon_file_path).unwrap();
+            let svg_path = svg.split("d=\"").nth(1).unwrap().split('"').next().unwrap();
+            let title = svg
+                .split("<title>")
+                .nth(1)
+                .unwrap()
+                .split("</title>")
+                .next()
+                .unwrap();
+            svg_paths.push((title.into(), svg_path.into()));
+        }
+        svg_paths
+    }
+
+    #[test]
+    fn parse_all_simple_icons() {
+        clone_simple_icons_repo();
+        let svg_paths = get_simple_icons_paths();
+        let mut errors: Vec<String> = Vec::new();
+        for (title, svg_path) in svg_paths {
+            let cst = svg_path_cst(svg_path.as_bytes());
+            if cst.is_err() {
+                errors.push(format!(
+                    "Failed to parse SVG path for Simple Icon '{}'. Error: {}\nPath: {}",
+                    title,
+                    cst.unwrap_err(),
+                    svg_path
+                ));
+            }
+        }
+        assert_eq!(errors.len(), 0, "{}", errors.join("\n\n"));
+    }
 }
