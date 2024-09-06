@@ -395,24 +395,24 @@ pub enum SVGPathCSTNode {
 /// in the SVG path string.
 #[derive(Debug, PartialEq, Clone)]
 pub struct SVGPathSegment {
-    /// SVG path command that uses this segment, even implicit
-    pub command: &'static SVGPathCommand,
     /// Explicit argument values passed to the command
     pub args: Vec<f64>,
     /// CST nodes that represent sintactically the command arguments
     pub cst: Vec<SVGPathCSTNode>,
+    /// SVG path command that uses this segment, even implicit
+    pub command: &'static SVGPathCommand,
     /// Start index of the segment in the SVG path string
     pub start: usize,
     /// End index of the segment in the SVG path string
     pub end: usize,
-    /// Whether the segment is chained to the previous one
-    pub chained: bool,
     /// Start index of the chain of segments in the SVG path string.
     /// Only valid if `chained` is `true`.
     pub chain_start: usize,
     /// End index of the chain of segments in the SVG path string.
     /// Only valid if `chained` is `true`.
     pub chain_end: usize,
+    /// Whether the segment is chained to the previous one
+    pub chained: bool,
 }
 
 fn new_segment(

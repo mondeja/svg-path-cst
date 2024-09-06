@@ -7,7 +7,7 @@ description = "CST SVG path parser."
 license = "MIT"
 documentation = "https://docs.rs/svg-path-cst"
 repository = "https://github.com/mondeja/svg-path-cst"
-author = "Álvaro Mondéjar Rubio"
+authors = ["Álvaro Mondéjar Rubio"]
 
 [lib]
 name = "svg_path_cst"
