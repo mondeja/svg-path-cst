@@ -22,10 +22,10 @@ pub use errors::SyntaxError;
 /// Check if a character is a command character.
 ///
 /// The previous implementation used a slice and `slice::contains()`, which
-/// was O(20). The current implementation is O(2), but is not exact because
-/// other characters like `b` and `B` are considered commands. Anyways,
-/// in the context that this function is used, the character raises a syntax
-/// error in the next iteration of the parser.
+/// was O(20) in the worst case. The current implementation is O(2) in the worst case,
+/// but is not exact because other characters like `b` and `B` are considered commands.
+/// Anyways, in the context that this function is used, the character raises a syntax
+/// error in the next iteration of the parser, so it's enough.
 #[inline]
 fn is_command(c: u8) -> bool {
     let bitwise3 = c >> 3;
