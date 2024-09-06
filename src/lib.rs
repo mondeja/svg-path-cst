@@ -19,17 +19,17 @@ pub(crate) mod tests;
 mod errors;
 pub use errors::SyntaxError;
 
-/// Checks if a character is a command character.
+/// Check if a character is a command character.
 ///
 /// The previous implementation used a slice and `slice::contains()`, which
-/// was O(n). The current implementation is O(1), but is not exact because
+/// was O(20). The current implementation is O(2), but is not exact because
 /// other characters like `b` and `B` are considered commands. Anyways,
 /// in the context that this function is used, the character raises a syntax
 /// error in the next iteration of the parser.
 #[inline]
 fn is_command(c: u8) -> bool {
     let bitwise3 = c >> 3;
-    bitwise3 > 7 && bitwise3 < 16
+    bitwise3 < 16 && bitwise3 > 7
 }
 
 #[inline]

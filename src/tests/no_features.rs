@@ -1556,10 +1556,6 @@ mod simple_icons {
                 .output()
                 .expect("Failed to clone Simple Icons repository.");
         }
-        println!(
-            "Simple Icons repository cloned to: {:?}",
-            simple_icons_temp_dir.exists()
-        );
     }
 
     fn get_simple_icons_paths() -> Vec<(String, String)> {
