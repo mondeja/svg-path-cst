@@ -1,8 +1,8 @@
 # svg-path-cst
 
-[![Crates.io](https://img.shields.io/crates/v/svg-path-cst)](https://crates.io/crates/svg-path-cst)
+[![Crates.io](https://img.shields.io/crates/v/svg-path-cst?logo=rust)](https://crates.io/crates/svg-path-cst)
 [![docs.rs](https://img.shields.io/docsrs/svg-path-cst?logo=docs.rs)](https://docs.rs/svg-path-cst)
-![Tests](https://img.shields.io/github/actions/workflow/status/mondeja/svg-path-cst/ci.yml?label=tests)
+![Tests](https://img.shields.io/github/actions/workflow/status/mondeja/svg-path-cst/ci.yml?label=tests&logo=github)
 [![License](https://img.shields.io/crates/l/svg-path-cst?logo=mit)](https://github.com/mondeja/svg-path-cst/blob/master/LICENSE.md)
 
 Concrete Syntax Tree parser for SVG v1.1 paths.
