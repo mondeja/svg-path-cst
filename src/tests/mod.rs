@@ -1,3 +1,4 @@
+mod docs;
 pub(in crate::tests) mod helpers;
 
 #[cfg(not(feature = "strict"))]

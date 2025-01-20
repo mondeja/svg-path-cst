@@ -99,6 +99,8 @@ assert_eq!(cst, Ok(expected_cst));
 This crate is compatible with SVG v1.1 paths, as defined in the [W3C SVG 1.1]
 and [`no_std` environments].
 
+Minimum Supported Rust Version: 1.61.0
+
 ## Features
 
 ### **`tracing`**
