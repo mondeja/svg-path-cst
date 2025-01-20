@@ -738,38 +738,39 @@ impl<'a> Parser<'a> {
     )]
     fn parse_coordinate(&mut self) -> Result<Coordinate, SyntaxError> {
         let sign_node = self.parse_sign();
-        let SVGPathCSTNode::Number {
-            value,
-            start,
-            end,
-            raw_number,
-        } = self.parse_number()?
-        else {
-            Err(SyntaxError::UnexpectedEnding {
-                index: self.index - 1,
-                expected: "number",
-            })?
-        };
-
-        let coord_value = if let Some(SVGPathCSTNode::Sign { sign, .. }) = &sign_node {
-            match sign {
-                Sign::Plus => value,
-                Sign::Minus => -value,
-            }
-        } else {
-            value
-        };
-
-        Ok((
-            sign_node,
+        match self.parse_number()? {
             SVGPathCSTNode::Number {
                 value,
                 start,
                 end,
                 raw_number,
-            },
-            coord_value,
-        ))
+            } => {
+                let coord_value =
+                    if let Some(SVGPathCSTNode::Sign { sign, .. }) = &sign_node {
+                        match sign {
+                            Sign::Plus => value,
+                            Sign::Minus => -value,
+                        }
+                    } else {
+                        value
+                    };
+
+                Ok((
+                    sign_node,
+                    SVGPathCSTNode::Number {
+                        value,
+                        start,
+                        end,
+                        raw_number,
+                    },
+                    coord_value,
+                ))
+            }
+            _ => Err(SyntaxError::UnexpectedEnding {
+                index: self.index - 1,
+                expected: "number",
+            }),
+        }
     }
 
     #[cfg_attr(
